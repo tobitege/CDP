@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -40,9 +41,16 @@ public sealed class ChromeV8InspectorIntegrationTests
         });
         Assert.NotNull(process);
 
+        // Drain both pipes: Chrome on Linux logs heavily to stderr, and an unread pipe can stall it.
+        var chromeOutput = new ConcurrentQueue<string>();
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) chromeOutput.Enqueue(e.Data); };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) chromeOutput.Enqueue(e.Data); };
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
         try
         {
-            var target = (await WaitForPageTargetAsync(new Uri($"http://127.0.0.1:{port}"))).First();
+            var target = (await WaitForPageTargetAsync(new Uri($"http://127.0.0.1:{port}"), process, chromeOutput)).First();
             await using var inspector = new V8InspectorClient();
             var pauses = Channel.CreateUnbounded<JsonObject>();
             inspector.EventReceived += (_, e) =>
@@ -135,10 +143,21 @@ public sealed class ChromeV8InspectorIntegrationTests
         return port;
     }
 
-    private static async Task<IReadOnlyList<V8InspectorTarget>> WaitForPageTargetAsync(Uri endpoint)
+    private static async Task<IReadOnlyList<V8InspectorTarget>> WaitForPageTargetAsync(
+        Uri endpoint,
+        Process process,
+        ConcurrentQueue<string> chromeOutput)
     {
-        for (var attempt = 0; attempt < 100; attempt++)
+        // Cold Chrome starts on shared CI runners regularly exceed 10 seconds.
+        var deadline = Stopwatch.StartNew();
+        while (deadline.Elapsed < TimeSpan.FromSeconds(45))
         {
+            if (process.HasExited)
+            {
+                throw new InvalidOperationException(
+                    $"Chrome exited with code {process.ExitCode} before the remote-debugging endpoint became ready.{FormatOutput(chromeOutput)}");
+            }
+
             try
             {
                 var targets = await V8InspectorClient.DiscoverTargetsAsync(endpoint);
@@ -148,8 +167,16 @@ public sealed class ChromeV8InspectorIntegrationTests
             catch (HttpRequestException)
             {
             }
-            await Task.Delay(100);
+            await Task.Delay(200);
         }
-        throw new TimeoutException("Chrome remote-debugging endpoint did not become ready.");
+        throw new TimeoutException($"Chrome remote-debugging endpoint did not become ready within {deadline.Elapsed.TotalSeconds:F0} s.{FormatOutput(chromeOutput)}");
+    }
+
+    private static string FormatOutput(ConcurrentQueue<string> chromeOutput)
+    {
+        var lines = chromeOutput.ToArray();
+        return lines.Length == 0
+            ? " Chrome wrote no output."
+            : Environment.NewLine + "Chrome output (last 40 lines):" + Environment.NewLine + string.Join(Environment.NewLine, lines.TakeLast(40));
     }
 }
