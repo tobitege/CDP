@@ -1,0 +1,85 @@
+appId: "CdpInspectorApp"
+description: "Records a preview tap on the sample context-menu button, replays it, then verifies MenuItem text selectors and Items collection access through the console"
+tags:
+  - "console"
+  - "menu"
+  - "selectors"
+  - "preview"
+  - "e2e"
+---
+- evalScript: "__raw_window.Width = 1280; __raw_window.Height = 800"
+- evalScript: "__raw_window.DataContext.Connection.DisconnectCommand.Execute(null)"
+- evalScript: "__raw_window.DataContext.Connection.HostAddress = \"http://127.0.0.1:9222\""
+- runFlow: "shared/connect_to_sample.yaml"
+- evalScript: "__raw_window.DataContext.NavigateToView(\"Console\")"
+- delay: "500"
+- assertTrue: "document.querySelector('#TabConsole') != null"
+
+# 1. Switch the sample app to the Popups & Windows tab by its stable name.
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"document.querySelector('#tabPopups').isSelected = true; 'popups'\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- delay: "1000"
+
+# 2. Record a tap on #btnContextMenu through the inspector preview canvas (50% zoom, no pan).
+#    The Recorder tab can be scrolled out of the tab strip, so it is activated through the view model.
+- evalScript: "__raw_window.DataContext.NavigateToView(\"Recorder\")"
+- evalScript: "__raw_window.DataContext.Recorder.IsTestStudioActive = true"
+- delay: "500"
+- assertTrue: "document.querySelector('#btnTestStudioClear') != null"
+- evalScript: "__raw_window.DataContext.Simulation.SelectedZoomPreset = \"50%\""
+- evalScript: "__raw_window.DataContext.Simulation.ResetPan()"
+- delay: "1500"
+- tapOn: "#btnTestStudioClear"
+- evalScript: "__raw_window.DataContext.Recorder.ClearRecording()"
+- delay: "300"
+- evalScript: "__raw_window.DataContext.Recorder.ToggleRecordCommand.Execute(null)"
+- delay: "500"
+- assertTrue: "__raw_window.DataContext.Recorder.IsRecording == true"
+- runFlow:
+    file: "shared/tap_sample_preview.yaml"
+    env:
+      PREVIEW_SELECTOR: "#btnContextMenu"
+- delay: "800"
+- evalScript: "__raw_window.DataContext.Recorder.ToggleRecordCommand.Execute(null)"
+- delay: "2500"
+- assertTrue: "__raw_window.DataContext.Recorder.IsRecording == false"
+- assertTrue: "__raw_window.DataContext.Recorder.TestStudio.Steps.Count > 0"
+- assertTrue: "__raw_window.DataContext.Recorder.TestStudio.Steps[0].Selector == \"#btnContextMenu\""
+
+# 3. Replay the recorded preview interaction with 0 failures
+- evalScript: "__raw_window.DataContext.Recorder.TestStudio.IsRecordVideoEnabled = true; __raw_window.DataContext.Recorder.TestStudio.IsGenerateReportEnabled = true"
+- tapOn: "#btnTestStudioPlay"
+- delay: "8000"
+- runFlow: "shared/assert_preview_replay_artifacts.yaml"
+
+# 4. Open the context menu and verify MenuItem header selectors and collection access
+- evalScript: "__raw_window.DataContext.NavigateToView(\"Console\")"
+- delay: "500"
+- assertTrue: "document.querySelector('#TabConsole') != null"
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"var btn = document.querySelector('#btnContextMenu').__raw_node; btn.ContextMenu.Open(btn); 'Opened'\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- delay: "1500"
+
+- evalScript: |
+    __raw_window.DataContext.Console.ConsoleInputText = "document.querySelector('[text=\"Menu Item 2\"]').id";
+    __raw_window.DataContext.Console.EvaluateAsync();
+- delay: "1500"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[__raw_window.DataContext.Console.ConsoleHistory.Count - 1].Result == 'menuItem2'"
+
+- evalScript: |
+    __raw_window.DataContext.Console.ConsoleInputText = "document.querySelector('MenuItem[Header=\"Menu Item 1\"]').id";
+    __raw_window.DataContext.Console.EvaluateAsync();
+- delay: "1500"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[__raw_window.DataContext.Console.ConsoleHistory.Count - 1].Result == 'menuItem1'"
+
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"document.querySelector('#contextMenu').Items.Count\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- delay: "1500"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[__raw_window.DataContext.Console.ConsoleHistory.Count - 1].Result == '2'"
+
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"document.querySelector('#contextMenu').Items[1].Header\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- delay: "1500"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[__raw_window.DataContext.Console.ConsoleHistory.Count - 1].Result == 'Menu Item 2'"
+
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"Array.from(document.querySelectorAll('MenuItem')).map(function (m) { return m.Header; }).join(',')\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- delay: "1500"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[__raw_window.DataContext.Console.ConsoleHistory.Count - 1].Result == 'Menu Item 1,Menu Item 2'"
+
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"document.querySelector('#contextMenu').__raw_node.Close()\"; __raw_window.DataContext.Console.EvaluateAsync();"

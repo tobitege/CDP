@@ -11,6 +11,8 @@ public class RecordedStep
     public double OffsetY { get; set; }
     public double? PointX { get; set; }
     public double? PointY { get; set; }
+    public string Point { get; set; } = "";
+    public string AssignTo { get; set; } = "";
     public double Width { get; set; }
     public double Height { get; set; }
     public string Url { get; set; } = "";

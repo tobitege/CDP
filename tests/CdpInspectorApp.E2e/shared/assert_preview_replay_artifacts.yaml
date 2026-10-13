@@ -1,0 +1,15 @@
+appId: "CdpInspectorApp"
+description: "Assert every recorded preview step passed and replay report paths and video are available"
+---
+- assertTrue: |
+    (function () {
+        var studio = __raw_window.DataContext.Recorder.TestStudio;
+        if (studio.IsExecuting || studio.Steps.Count == 0) return false;
+        for (var i = 0; i < studio.Steps.Count; i++) {
+            if (!studio.Steps[i].IsPassed) return false;
+        }
+        return true;
+    })()
+- assertTrue: "__raw_window.DataContext.Recorder.TestStudio.HasLastRunRecording == true"
+- assertTrue: "__raw_window.DataContext.Recorder.TestStudio.LastReportPath.length > 0"
+- assertTrue: "__raw_window.DataContext.Recorder.TestStudio.LastPdfReportPath.length > 0"
