@@ -49,6 +49,9 @@ jobs:
             --blame-hang-dump-type none
             --results-directory TestResults
             --logger "console;verbosity=detailed")
+          if [[ -n "${3:-}" ]]; then
+            test_args+=(--framework "$3")
+          fi
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             xvfb-run --auto-servernum dotnet test "${test_args[@]}"
           else
@@ -57,7 +60,10 @@ jobs:
         }
         for proj in tests/*/*.csproj; do
           echo "=== Executing tests for $proj ==="
-          if [[ "$proj" == "tests/CDP.Inspector.Shared.Tests/CDP.Inspector.Shared.Tests.csproj" ]]; then
+          if [[ "$proj" == "tests/CDP.Diagnostics.IntegrationTests/CDP.Diagnostics.IntegrationTests.csproj" && "${{ matrix.os }}" == "windows-latest" ]]; then
+            run_test_project "$proj" "$FILTER" net10.0 || exit 1
+            run_test_project "$proj" "$FILTER" net10.0-windows || exit 1
+          elif [[ "$proj" == "tests/CDP.Inspector.Shared.Tests/CDP.Inspector.Shared.Tests.csproj" ]]; then
             # The real Node/Inspector session owns a long-lived WebSocket and an
             # Avalonia window. Give it a fresh testhost so its native teardown
             # cannot stall an unrelated headless layout test on macOS. Keep the
@@ -106,6 +112,22 @@ jobs:
             run_test_project "$proj" "$FILTER" || exit 1
           fi
         done
+
+    - name: Run native WinUI application tests
+      if: matrix.os == 'windows-latest'
+      timeout-minutes: 5
+      shell: pwsh
+      run: |
+        # The WinUI host owns the main STA thread and xUnit's process lifetime.
+        # Use its console runner instead of VSTest's discovery subprocess.
+        New-Item -ItemType Directory -Force TestResults | Out-Null
+        & ./tests/CDP.Diagnostics.IntegrationTests/bin/Release/net10.0-windows10.0.19041.0/win-x64/CDP.Diagnostics.IntegrationTests.exe -xml TestResults/winui.xml
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        [xml]$report = Get-Content TestResults/winui.xml
+        $result = $report.assemblies.assembly
+        if ([int]$result.total -lt 1 -or [int]$result.failed -ne 0 -or [int]$result.errors -ne 0) {
+          throw 'WinUI tests did not produce a passing, non-empty result.'
+        }
 
     - name: Upload Logs on Failure
       if: failure()

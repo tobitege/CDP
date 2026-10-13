@@ -22,57 +22,24 @@ public partial class WinUiTests
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var phase = "starting the UI thread";
         void SetPhase(string value) => Volatile.Write(ref phase, value);
-        Exception? failure = null;
-        var thread = new Thread(() =>
+        var dispatcher = Assert.IsType<Microsoft.UI.Dispatching.DispatcherQueue>(WinUiTestHost.Dispatcher);
+        Assert.True(dispatcher.TryEnqueue(async () =>
         {
             try
             {
-                SetPhase("initializing WinRT");
-                WinRT.ComWrappersSupport.InitializeComWrappers();
-                SetPhase("starting the WinUI application");
-                Application.Start(parameters =>
-                {
-                    SetPhase("creating the WinUI application");
-                    SynchronizationContext.SetSynchronizationContext(
-                        new Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(
-                            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()));
-                    _ = new TestApplication(async () =>
-                    {
-                        try { await VerifyWindows(SetPhase); }
-                        catch (Exception ex) { failure = ex; }
-                        finally
-                        {
-                            SetPhase("exiting the WinUI application");
-                            Application.Current.Exit();
-                        }
-                    });
-                });
+                await VerifyWindows(SetPhase);
+                completed.TrySetResult();
             }
-            catch (Exception ex) { failure = ex; }
-            finally
-            {
-                if (failure != null) completed.TrySetException(failure);
-                else completed.TrySetResult();
-            }
-        }) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+            catch (Exception ex) { completed.TrySetException(ex); }
+        }));
         try
         {
-            await completed.Task.WaitAsync(TimeSpan.FromSeconds(45));
+            await completed.Task.WaitAsync(TimeSpan.FromSeconds(45), TestContext.Current.CancellationToken);
         }
         catch (TimeoutException)
         {
             Assert.Fail($"WinUI test timed out while {Volatile.Read(ref phase)}. " +
-                $"UI thread: {thread.ThreadState}; interactive desktop: {Environment.UserInteractive}.");
-        }
-    }
-
-    private sealed class TestApplication(Func<Task> verify) : Application
-    {
-        protected override void OnLaunched(LaunchActivatedEventArgs args)
-        {
-            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(async () => await verify());
+                $"Interactive desktop: {Environment.UserInteractive}.");
         }
     }
 

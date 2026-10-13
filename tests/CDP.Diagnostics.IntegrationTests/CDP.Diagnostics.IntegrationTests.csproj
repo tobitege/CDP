@@ -27,6 +27,7 @@
 
   <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.19041.0'">
     <Compile Remove="WinUiTests.cs" />
+    <Compile Remove="WinUiTestHost.cs" />
   </ItemGroup>
 
   <!-- target: net10.0 -->
@@ -46,6 +47,9 @@
 
   <!-- target: net10.0-windows10.0.19041.0 -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.19041.0'">
+    <!-- This target is a native UI test executable, run directly in CI. -->
+    <IsTestProject>false</IsTestProject>
+    <StartupObject>CDP.Diagnostics.IntegrationTests.WinUiTestHost</StartupObject>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

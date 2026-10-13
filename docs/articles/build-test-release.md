@@ -51,11 +51,31 @@ The solution uses central package management via `Directory.Packages.props`:
 dotnet test
 ```
 
+On Windows, also run the native WinUI executable described below. That target is an application host and is excluded from VSTest discovery.
+
 ### Run Specific Test Project
 
 ```bash
 dotnet test tests/Avalonia.Diagnostics.Cdp.Tests/
 ```
+
+### Windows Framework Integration Tests
+
+WPF and Uno integration tests use VSTest:
+
+```powershell
+dotnet test tests/CDP.Diagnostics.IntegrationTests/ -c Release -f net10.0
+dotnet test tests/CDP.Diagnostics.IntegrationTests/ -c Release -f net10.0-windows
+```
+
+Run the native WinUI target through its xUnit executable on a Windows desktop. Its host owns the main STA thread and keeps a window alive until xUnit finishes writing results; VSTest's separate discovery process cannot host that lifecycle.
+
+```powershell
+New-Item -ItemType Directory -Force TestResults
+dotnet run --project tests/CDP.Diagnostics.IntegrationTests/ -c Release -f net10.0-windows10.0.19041.0 -- -xml TestResults/winui.xml
+```
+
+The CI test suite runs all three targets and checks that the WinUI XML report contains tests with no failures or errors.
 
 ### View Layout Tests
 
