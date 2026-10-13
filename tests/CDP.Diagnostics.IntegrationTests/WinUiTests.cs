@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,33 +17,55 @@ public partial class WinUiTests
     private static partial nint SetWindowLongPtr(nint window, int index, nint value);
 
     [Fact]
-    public void TestWinUiPopupAndOwnedWindowSupport()
+    public async Task TestWinUiPopupAndOwnedWindowSupport()
     {
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var phase = "starting the UI thread";
+        void SetPhase(string value) => Volatile.Write(ref phase, value);
         Exception? failure = null;
         var thread = new Thread(() =>
         {
             try
             {
+                SetPhase("initializing WinRT");
                 WinRT.ComWrappersSupport.InitializeComWrappers();
+                SetPhase("starting the WinUI application");
                 Application.Start(parameters =>
                 {
+                    SetPhase("creating the WinUI application");
                     SynchronizationContext.SetSynchronizationContext(
                         new Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(
                             Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()));
                     _ = new TestApplication(async () =>
                     {
-                        try { await VerifyWindows(); }
+                        try { await VerifyWindows(SetPhase); }
                         catch (Exception ex) { failure = ex; }
-                        finally { Application.Current.Exit(); }
+                        finally
+                        {
+                            SetPhase("exiting the WinUI application");
+                            Application.Current.Exit();
+                        }
                     });
                 });
             }
             catch (Exception ex) { failure = ex; }
+            finally
+            {
+                if (failure != null) completed.TrySetException(failure);
+                else completed.TrySetResult();
+            }
         }) { IsBackground = true };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        Assert.True(thread.Join(TimeSpan.FromSeconds(45)), "WinUI test application did not finish.");
-        if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+        try
+        {
+            await completed.Task.WaitAsync(TimeSpan.FromSeconds(45));
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"WinUI test timed out while {Volatile.Read(ref phase)}. " +
+                $"UI thread: {thread.ThreadState}; interactive desktop: {Environment.UserInteractive}.");
+        }
     }
 
     private sealed class TestApplication(Func<Task> verify) : Application
@@ -65,8 +86,9 @@ public partial class WinUiTests
         await loaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
     }
 
-    private static async Task VerifyWindows()
+    private static async Task VerifyWindows(Action<string> setPhase)
     {
+        setPhase("creating the test windows");
         CdpServer.EnsureInitialized();
         var mainGrid = new Grid { Name = "MainGrid" };
         var mainWindow = new Window { Content = mainGrid };
@@ -78,7 +100,9 @@ public partial class WinUiTests
         var popup = new Popup { Child = popupBtn };
         try
         {
+            setPhase("activating the main window");
             await ActivateAsync(mainWindow);
+            setPhase("activating the owned windows");
             dialogWindow.Activate();
             nestedWindow.Activate();
             SetWindowLongPtr(WinRT.Interop.WindowNative.GetWindowHandle(dialogWindow), -8,
@@ -93,6 +117,7 @@ public partial class WinUiTests
             popup.IsOpen = true;
             mainGrid.UpdateLayout();
 
+            setPhase("verifying the popup and owned window trees");
             var children = CdpVisualTreeHelper.GetChildren(mainGrid, false).ToList();
             Assert.Contains(dialogGrid, children);
             Assert.DoesNotContain(nestedGrid, children);
@@ -108,6 +133,7 @@ public partial class WinUiTests
         }
         finally
         {
+            setPhase("closing the test windows");
             popup.IsOpen = false;
             CdpServer.Unregister(nestedWindow);
             CdpServer.Unregister(dialogWindow);
