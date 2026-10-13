@@ -136,7 +136,11 @@ public static class InputDomain
             catch { }
 
             var hit = HitTestElement(hitRoot, position);
-            if (hit == null) return;
+            while (hit != null && hit is not UIElement)
+            {
+                hit = VisualTreeHelper.GetParent(hit) as Visual;
+            }
+            if (hit is not UIElement inputElement) return;
 
             var mouseDevice = InputManager.Current.PrimaryMouseDevice;
             var timestamp = Environment.TickCount;
@@ -148,7 +152,7 @@ public static class InputDomain
                     RoutedEvent = UIElement.MouseMoveEvent,
                     Source = hit
                 };
-                hit.RaiseEvent(args);
+                inputElement.RaiseEvent(args);
             }
             else if (type == "mousePressed")
             {
@@ -158,7 +162,7 @@ public static class InputDomain
                     RoutedEvent = UIElement.MouseDownEvent,
                     Source = hit
                 };
-                hit.RaiseEvent(args);
+                inputElement.RaiseEvent(args);
 
                 // Try to set focus
                 if (hit is UIElement uiElement && uiElement.Focusable)
@@ -174,7 +178,7 @@ public static class InputDomain
                     RoutedEvent = UIElement.MouseUpEvent,
                     Source = hit
                 };
-                hit.RaiseEvent(args);
+                inputElement.RaiseEvent(args);
             }
             else if (type == "mouseWheel")
             {
@@ -183,7 +187,7 @@ public static class InputDomain
                     RoutedEvent = UIElement.MouseWheelEvent,
                     Source = hit
                 };
-                hit.RaiseEvent(args);
+                inputElement.RaiseEvent(args);
             }
         });
     }

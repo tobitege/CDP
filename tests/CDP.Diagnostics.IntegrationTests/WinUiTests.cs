@@ -1,5 +1,8 @@
 using System;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -8,65 +11,92 @@ using Xunit;
 
 namespace CDP.Diagnostics.IntegrationTests;
 
-public class WinUiTests
+public partial class WinUiTests
 {
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static partial nint SetWindowLongPtr(nint window, int index, nint value);
+
     [Fact]
-    public void TestWinUiPopupAndSecondaryWindowSupport()
+    public void TestWinUiPopupAndOwnedWindowSupport()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                WinRT.ComWrappersSupport.InitializeComWrappers();
+                Application.Start(_ => new TestApplication(() =>
+                {
+                    try { VerifyWindows(); }
+                    catch (Exception ex) { failure = ex; }
+                    finally { Application.Current.Exit(); }
+                }));
+            }
+            catch (Exception ex) { failure = ex; }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(45)), "WinUI test application did not finish.");
+        if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+    }
 
-        // Initialize CdpServer
+    private sealed class TestApplication(Action verify) : Application
+    {
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
+        {
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() => verify());
+        }
+    }
+
+    private static void VerifyWindows()
+    {
         CdpServer.EnsureInitialized();
-
         var mainGrid = new Grid { Name = "MainGrid" };
-        var mainWindow = new Window();
-        mainWindow.Content = mainGrid;
-
-        var secondaryGrid = new Grid { Name = "SecondaryGrid" };
-        var secondaryWindow = new Window();
-        secondaryWindow.Content = secondaryGrid;
-
-        CdpServer.Register(mainWindow, "MainWindow");
-        CdpServer.Register(secondaryWindow, "SecondaryWindow");
-
+        var mainWindow = new Window { Content = mainGrid };
+        var dialogGrid = new Grid { Name = "DialogGrid" };
+        var dialogWindow = new Window { Content = dialogGrid };
+        var nestedGrid = new Grid { Name = "NestedGrid" };
+        var nestedWindow = new Window { Content = nestedGrid };
+        var popupBtn = new Button { Name = "PopupBtn", Content = "Popup Button" };
+        var popup = new Popup { Child = popupBtn };
         try
         {
-            // Set up mock XamlRoot using MainWindow.Content's XamlRoot if available
-            var xamlRoot = mainGrid.XamlRoot;
-
-            // Create Popup and add to PopupRoot or visual tree if xamlRoot is available
-            var popup = new Popup
-            {
-                IsOpen = true
-            };
-            var popupBtn = new Button { Name = "PopupBtn", Content = "Popup Button" };
-            popup.Child = popupBtn;
-
+            mainWindow.Activate();
+            dialogWindow.Activate();
+            nestedWindow.Activate();
+            SetWindowLongPtr(WinRT.Interop.WindowNative.GetWindowHandle(dialogWindow), -8,
+                WinRT.Interop.WindowNative.GetWindowHandle(mainWindow));
+            SetWindowLongPtr(WinRT.Interop.WindowNative.GetWindowHandle(nestedWindow), -8,
+                WinRT.Interop.WindowNative.GetWindowHandle(dialogWindow));
+            CdpServer.Register(mainWindow, "MainWindow");
+            CdpServer.Register(dialogWindow, "DialogWindow");
+            CdpServer.Register(nestedWindow, "NestedWindow");
             mainGrid.Children.Add(popup);
+            popup.XamlRoot = mainGrid.XamlRoot;
+            popup.IsOpen = true;
+            mainGrid.UpdateLayout();
 
-            // 1. Verify GetChildren anchors secondary window content and popups to main content
             var children = CdpVisualTreeHelper.GetChildren(mainGrid, false).ToList();
-            Assert.Contains(secondaryGrid, children);
+            Assert.Contains(dialogGrid, children);
+            Assert.DoesNotContain(nestedGrid, children);
             Assert.Contains(popupBtn, children);
-
-            // 2. Verify GetParent maps popup children and secondary window content back to main window Content
-            var parentOfSecondary = CdpVisualTreeHelper.GetParent(secondaryGrid, false);
-            Assert.Equal(mainGrid, parentOfSecondary);
-
-            var parentOfPopupChild = CdpVisualTreeHelper.GetParent(popupBtn, false);
-            Assert.Equal(mainGrid, parentOfPopupChild);
-
-            // 3. Verify QuerySelector locates element inside popup
-            var foundBtn = SelectorEngine.QuerySelector(mainGrid, "#PopupBtn");
-            Assert.NotNull(foundBtn);
-            Assert.Equal(popupBtn, foundBtn);
+            Assert.Equal(mainGrid, CdpVisualTreeHelper.GetParent(dialogGrid, false));
+            Assert.Equal(dialogGrid, CdpVisualTreeHelper.GetParent(nestedGrid, false));
+            Assert.Equal(mainGrid, CdpVisualTreeHelper.GetParent(popupBtn, false));
+            Assert.Equal(popupBtn, SelectorEngine.QuerySelector(mainGrid, "#PopupBtn"));
+            Assert.Null(SelectorEngine.QuerySelector(dialogGrid, "#MainGrid"));
+            Assert.True(CdpVisualTreeHelper.IsOverlayWindowFor(dialogWindow, nestedWindow));
+            Assert.False(CdpVisualTreeHelper.IsOverlayWindowFor(dialogWindow, mainWindow));
         }
         finally
         {
+            popup.IsOpen = false;
+            CdpServer.Unregister(nestedWindow);
+            CdpServer.Unregister(dialogWindow);
             CdpServer.Unregister(mainWindow);
-            CdpServer.Unregister(secondaryWindow);
+            nestedWindow.Close();
+            dialogWindow.Close();
             mainWindow.Close();
-            secondaryWindow.Close();
         }
     }
 }

@@ -147,7 +147,7 @@ public static class AccessibilityDomain
     private static string GetPeerId(CdpSession session, AutomationPeer peer)
     {
         if (peer == null) return "";
-        if (peer.Owner is Visual visual)
+        if (peer is UIElementAutomationPeer { Owner: Visual visual })
         {
             return session.NodeMap.GetOrAdd(visual).ToString();
         }
@@ -173,7 +173,7 @@ public static class AccessibilityDomain
     private static JsonObject BuildAXNode(CdpSession session, AutomationPeer peer)
     {
         int nodeId = 0;
-        var owner = peer.Owner;
+        var owner = (peer as UIElementAutomationPeer)?.Owner;
         if (owner is Visual visual)
         {
             nodeId = session.NodeMap.GetOrAdd(visual);
@@ -200,7 +200,7 @@ public static class AccessibilityDomain
         {
             parentId = GetPeerId(session, parentPeer);
         }
-        else if (session.Window != null && peer.Owner != session.Window)
+        else if (session.Window != null && owner != session.Window)
         {
             var mainPeer = UIElementAutomationPeer.CreatePeerForElement(session.Window);
             if (mainPeer != null)
@@ -222,7 +222,7 @@ public static class AccessibilityDomain
             }
         }
 
-        if (session.Window != null && peer.Owner == session.Window)
+        if (session.Window != null && owner == session.Window)
         {
             var extraRoots = GetExtraRootPeers(session);
             foreach (var extra in extraRoots)

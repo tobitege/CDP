@@ -112,7 +112,7 @@ public static class CdpServer
         {
             var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
             if (dispatcher.CheckAccess()) return await action();
-            return await dispatcher.InvokeAsync(action).Task;
+            return await dispatcher.InvokeAsync(action).Task.Unwrap();
         };
 
         Chrome.DevTools.Protocol.CdpServer.TargetProvider = GetWpfTargets;

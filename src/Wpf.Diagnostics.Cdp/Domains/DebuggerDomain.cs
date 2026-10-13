@@ -155,12 +155,12 @@ public static class DebuggerDomain
                             Logger.LogInfoMessage("Debugger", msg);
                             Chrome.DevTools.Protocol.Domains.LogDomain.BroadcastLog("Console", "Information", msg);
                         }));
-                        engine.SetValue("Query", new Func<string, UIElement?>(s => SelectorEngine.QuerySelector(session.Window?.Content as UIElement ?? selectedNode, s, session.UseLogicalTree)));
-                        engine.SetValue("QueryAll", new Func<string, IEnumerable<UIElement>>(s => SelectorEngine.QuerySelectorAll(session.Window?.Content as UIElement ?? selectedNode, s, session.UseLogicalTree)));
+                        engine.SetValue("Query", new Func<string, System.Windows.Media.Visual?>(s => SelectorEngine.QuerySelector(session.Window ?? (System.Windows.Media.Visual?)selectedNode, s, session.UseLogicalTree)));
+                        engine.SetValue("QueryAll", new Func<string, IEnumerable<System.Windows.Media.Visual>>(s => SelectorEngine.QuerySelectorAll(session.Window ?? (System.Windows.Media.Visual?)selectedNode, s, session.UseLogicalTree)));
 
                         if (selectedNode != null)
                         {
-                            var elementObj = new CdpRuntimeElement(selectedNode, session);
+                            var elementObj = new CdpRuntimeElement(selectedNode);
                             engine.SetValue("$0", elementObj);
                             engine.SetValue("_0", elementObj);
                         }

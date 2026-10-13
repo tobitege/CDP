@@ -167,6 +167,12 @@ public sealed class ChromeV8InspectorIntegrationTests
             catch (HttpRequestException)
             {
             }
+            catch (OperationCanceledException)
+            {
+                // Discovery has its own HTTP timeout. A cold Chrome process may
+                // accept the connection before it can respond; retry within the
+                // overall startup deadline just as for a refused connection.
+            }
             await Task.Delay(200);
         }
         throw new TimeoutException($"Chrome remote-debugging endpoint did not become ready within {deadline.Elapsed.TotalSeconds:F0} s.{FormatOutput(chromeOutput)}");

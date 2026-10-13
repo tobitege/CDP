@@ -211,6 +211,23 @@ public static class TestStudioStepConverter
             recStep.Url = Interpolate(step.Value ?? "", env);
         }
 
+        if (action.Equals("extendedWaitUntil", StringComparison.OrdinalIgnoreCase) && step.Parameters != null)
+        {
+            bool visible = step.Parameters.TryGetValue("visible", out var waitSelector);
+            if (!visible) step.Parameters.TryGetValue("notVisible", out waitSelector);
+            recStep.Type = visible ? "waitForVisible" : "waitForHidden";
+            recStep.Selector = Interpolate(waitSelector is IReadOnlyDictionary<string, object?> map
+                ? FlowCommandCatalog.BuildRuntimeSelector(map, "")
+                : FlowCommandCatalog.ScalarToString(waitSelector), env);
+            recStep.Value = step.Parameters.TryGetValue("timeout", out var timeout)
+                ? Interpolate(FlowCommandCatalog.ScalarToString(timeout), env) : "30000";
+        }
+
+        if (step.NestedSteps != null)
+        {
+            recStep.NestedSteps = step.NestedSteps.Select(child => ToRecordedStep(child, env)).ToList();
+        }
+
         return recStep;
     }
 

@@ -628,6 +628,49 @@ appId: CdpInspectorApp
     }
 
     [Fact]
+    public void PlaywrightExportPreservesNestedRetryAndWaits()
+    {
+        const string yaml = """
+appId: CdpInspectorApp
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - evalScript:
+          value: "Date.now()"
+          assignTo: "timestamp"
+      - retry:
+          maxRetries: 1
+          commands:
+            - assertTrue: "${timestamp} > 0"
+- extendedWaitUntil:
+    visible: "#imgScreenshot"
+    timeout: 5000
+- extendedWaitUntil:
+    notVisible: "#dialog"
+    timeout: 1200
+""";
+        var steps = TestStudioStepConverter.ConvertYamlToRecordedSteps(yaml);
+        Assert.Equal(2, steps[0].NestedSteps.Count);
+        Assert.Equal("timestamp", steps[0].NestedSteps[0].AssignTo);
+        Assert.Equal("${timestamp} > 0", Assert.Single(steps[0].NestedSteps[1].NestedSteps).Value);
+        Assert.Equal("waitForVisible", steps[1].Type);
+        Assert.Equal("#imgScreenshot", steps[1].Selector);
+        Assert.Equal("5000", steps[1].Value);
+
+        var generated = new PlaywrightGenerator().Generate(steps, "http://127.0.0.1:9223");
+        Assert.Contains("const variables = Object.create(null)", generated);
+        Assert.Contains("const maxRetries = Number('2')", generated);
+        Assert.Contains("const maxRetries = Number('1')", generated);
+        Assert.Contains("if (attempt >= maxRetries) throw error", generated);
+        Assert.Contains("variables['timestamp'] = await page.evaluate('Date.now()')", generated);
+        Assert.Contains("await page.evaluate(interpolate('${timestamp} > 0'))", generated);
+        Assert.Contains("timeout: Number('5000') }).toBe(true)", generated);
+        Assert.Contains("timeout: Number('1200') }).toBe(false)", generated);
+        Assert.DoesNotContain("Unsupported step type", generated);
+    }
+
+    [Fact]
     public void TestCdpInspectorAppE2eFlows()
     {
         var e2eDir = System.IO.Path.Combine(System.AppContext.BaseDirectory, "../../../../../tests/CdpInspectorApp.E2e");

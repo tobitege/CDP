@@ -8,6 +8,9 @@ tags:
   - "recorder"
   - "e2e"
 ---
+- evalScript: "__raw_window.Width = 1280; __raw_window.Height = 800"
+- evalScript: "__raw_window.DataContext.Connection.DisconnectAsync()"
+- delay: "300"
 - evalScript: "__raw_window.DataContext.Connection.HostAddress = \"http://127.0.0.1:9222\""
 - runFlow: "shared/connect_to_sample.yaml"
 - runFlow: "shared/connect_to_sample_owned_dialog.yaml"
@@ -85,6 +88,7 @@ tags:
 - assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[${dialogCountAfterTapIndex}].Result == 'Dialog Clicks: 1'"
 
 # 5. Replay the recorded preview interaction with 0 failures; it must click the dialog button again.
+- evalScript: "__raw_window.DataContext.Recorder.TestStudio.IsRecordVideoEnabled = true; __raw_window.DataContext.Recorder.TestStudio.IsGenerateReportEnabled = true"
 - tapOn: "#btnTestStudioPlay"
 - retry:
     maxRetries: 60
@@ -102,6 +106,7 @@ tags:
       - delay: "250"
       - assertTrue: "__raw_window.DataContext.Console.ConsoleHistory.Count > ${dialogCountAfterReplayIndex}"
 - assertTrue: "__raw_window.DataContext.Console.ConsoleHistory[${dialogCountAfterReplayIndex}].Result == 'Dialog Clicks: 2'"
+- runFlow: "shared/assert_preview_replay_artifacts.yaml"
 
 # 6. Close the dialog and reconnect the inspector to the sample main window.
 - runFlow: "shared/close_sample_owned_dialog.yaml"

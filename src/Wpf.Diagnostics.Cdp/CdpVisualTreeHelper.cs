@@ -111,7 +111,7 @@ public static class CdpVisualTreeHelper
         {
             try
             {
-                return visual.TranslatePoint(point, window);
+                return visual.TransformToVisual(window).Transform(point);
             }
             catch
             {
@@ -274,7 +274,7 @@ public static class CdpVisualTreeHelper
                 }
                 catch { }
 
-                var hit = VisualTreeHelper.HitTest(childUI, popupLocalPoint)?.VisualHit;
+                var hit = VisualTreeHelper.HitTest(childUI, popupLocalPoint)?.VisualHit as Visual;
                 if (hit != null)
                 {
                     return new HitTestResult(hit, primaryWindow, popupLocalPoint);
@@ -292,7 +292,7 @@ public static class CdpVisualTreeHelper
             if (win != null)
             {
                 Point winLocalPoint = TranslatePointToWindow(primaryWindow, mousePos, win);
-                var hit = VisualTreeHelper.HitTest(win, winLocalPoint)?.VisualHit;
+                var hit = VisualTreeHelper.HitTest(win, winLocalPoint)?.VisualHit as Visual;
                 if (hit != null)
                 {
                     return new HitTestResult(hit, win, winLocalPoint);
@@ -300,7 +300,7 @@ public static class CdpVisualTreeHelper
             }
         }
 
-        var primaryHit = VisualTreeHelper.HitTest(primaryWindow, mousePos)?.VisualHit;
+        var primaryHit = VisualTreeHelper.HitTest(primaryWindow, mousePos)?.VisualHit as Visual;
         return new HitTestResult(primaryHit, primaryWindow, mousePos);
     }
 }

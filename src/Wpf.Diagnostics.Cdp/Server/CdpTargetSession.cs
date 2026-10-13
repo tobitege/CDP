@@ -276,7 +276,7 @@ public class CdpTargetSession : Chrome.DevTools.Protocol.CdpTargetSession
                             pixelHeight = Math.Max(1, (int)(windowHeight * scale));
                             visualStateHash = CdpSession.GetVisualTreeStateHash(Window);
 
-                            var rtb = new RenderTargetBitmap(pixelWidth, pixelHeight, 96 * scale, 96 * scale, PixelFormats.Pbgra30);
+                            var rtb = new RenderTargetBitmap(pixelWidth, pixelHeight, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
                             rtb.Render(Window);
 
                             var encoder = new PngBitmapEncoder();
@@ -317,36 +317,33 @@ public class CdpTargetSession : Chrome.DevTools.Protocol.CdpTargetSession
                     if (_screencastTransferMode == "tiled" && rawPngBytes != null && rawPngBytes.Length > 0)
                     {
                         using var skBitmap = SkiaSharp.SKBitmap.Decode(rawPngBytes);
-                        var changedTiles = _tiledScreencastProducer.ProcessFrame(skBitmap, currentDirtyRect, out var frameBytes);
+                        if (skBitmap == null)
+                        {
+                            try { if (_ackSignal.CurrentCount == 0) _ackSignal.Release(); } catch { }
+                            continue;
+                        }
+                        var changedTiles = _tiledScreencastProducer.ProcessFrame(
+                            skBitmap, _screencastFormat ?? "png", _screencastQuality,
+                            currentDirtyRect, out int cols, out int rows);
 
-                        if (changedTiles.Count == 0 && _lastSentFrameBytes != null)
+                        if (changedTiles == null || changedTiles.Count == 0)
                         {
                             try { if (_ackSignal.CurrentCount == 0) _ackSignal.Release(); } catch { }
                             continue;
                         }
 
-                        base64Data = Convert.ToBase64String(frameBytes);
-                        _lastSentFrameBytes = frameBytes;
-
                         var currentFrameId = ++_lastScreencastFrameId;
                         _lastFrameSentTime = DateTime.UtcNow;
-
-                        var tilesJson = new JsonArray();
-                        foreach (var tile in changedTiles)
-                        {
-                            tilesJson.Add(new JsonObject
-                            {
-                                ["x"] = tile.X,
-                                ["y"] = tile.Y,
-                                ["width"] = tile.Width,
-                                ["height"] = tile.Height,
-                                ["data"] = Convert.ToBase64String(tile.PngData)
-                            });
-                        }
-
                         var screencastParams = new JsonObject
                         {
-                            ["data"] = base64Data,
+                            ["transferMode"] = "tiled",
+                            ["pixelWidth"] = pixelWidth,
+                            ["pixelHeight"] = pixelHeight,
+                            ["tileWidth"] = 64,
+                            ["tileHeight"] = 64,
+                            ["cols"] = cols,
+                            ["rows"] = rows,
+                            ["tiles"] = changedTiles,
                             ["metadata"] = new JsonObject
                             {
                                 ["deviceWidth"] = width,
@@ -355,9 +352,7 @@ public class CdpTargetSession : Chrome.DevTools.Protocol.CdpTargetSession
                                 ["offsetTop"] = 0,
                                 ["scrollX"] = 0,
                                 ["scrollY"] = 0,
-                                ["timestamp"] = (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0,
-                                ["transferMode"] = "tiled",
-                                ["tiles"] = tilesJson
+                                ["timestamp"] = (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0
                             },
                             ["sessionId"] = currentFrameId
                         };

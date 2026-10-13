@@ -105,6 +105,44 @@ public class WpfTests
     }
 
     [Fact]
+    public void OwnedWindowTreeDoesNotIncludeItsOwner()
+    {
+        RunInSta(() =>
+        {
+            CdpServer.EnsureInitialized();
+            var main = new Window { Name = "MainWindow", Content = new Grid(), Width = 300, Height = 200 };
+            var dialog = new Window { Name = "DialogWindow", Owner = main, Content = new Grid(), Width = 200, Height = 150 };
+            var nested = new Window { Name = "NestedWindow", Owner = dialog, Content = new Button { Name = "NestedButton" }, Width = 100, Height = 100 };
+            try
+            {
+                main.Show();
+                dialog.Show();
+                nested.Show();
+                CdpServer.Register(main, "MainWindow");
+                CdpServer.Register(dialog, "DialogWindow");
+                CdpServer.Register(nested, "NestedWindow");
+                Assert.Contains(dialog, CdpVisualTreeHelper.GetChildren(main, false));
+                Assert.DoesNotContain(nested, CdpVisualTreeHelper.GetChildren(main, false));
+                Assert.Contains(nested, CdpVisualTreeHelper.GetChildren(dialog, false));
+                Assert.Equal(dialog, CdpVisualTreeHelper.GetParent(nested, false));
+                Assert.Null(SelectorEngine.QuerySelector(dialog, "#MainWindow"));
+                Assert.NotNull(SelectorEngine.QuerySelector(dialog, "#NestedButton"));
+                Assert.True(CdpVisualTreeHelper.IsOverlayWindowFor(dialog, nested));
+                Assert.False(CdpVisualTreeHelper.IsOverlayWindowFor(dialog, main));
+            }
+            finally
+            {
+                CdpServer.Unregister(nested);
+                CdpServer.Unregister(dialog);
+                CdpServer.Unregister(main);
+                nested.Close();
+                dialog.Close();
+                main.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void TestWpfDomHitTesting()
     {
         if (!OperatingSystem.IsWindows()) return;
