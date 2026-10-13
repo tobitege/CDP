@@ -916,15 +916,6 @@ public sealed class V8InspectorClientIntegrationTests
                 ["objectId"] = groupedObjectId
             }));
 
-            var editedSource = source["scriptSource"]!.GetValue<string>().Replace("return sum * 2;", "return sum * 3;", StringComparison.Ordinal);
-            var liveEdit = await inspector.SendCommandAsync("Debugger.setScriptSource", new JsonObject
-            {
-                ["scriptId"] = location["scriptId"]!.GetValue<string>(),
-                ["scriptSource"] = editedSource,
-                ["allowTopFrameEditing"] = true
-            });
-            Assert.Equal("Ok", liveEdit["status"]?.GetValue<string>());
-
             await inspector.SendCommandAsync("Debugger.setVariableValue", new JsonObject
             {
                 ["scopeNumber"] = 0,
@@ -940,6 +931,18 @@ public sealed class V8InspectorClientIntegrationTests
                 ["throwOnSideEffect"] = true
             });
             Assert.Equal(7, changedEvaluation["result"]?["value"]?.GetValue<int>());
+
+            // Live editing restarts the active activation. Exercise local mutation first,
+            // while the original callFrameId still identifies the paused frame; Node on
+            // Windows can terminate its Inspector socket if that stale frame is mutated.
+            var editedSource = source["scriptSource"]!.GetValue<string>().Replace("return sum * 2;", "return sum * 3;", StringComparison.Ordinal);
+            var liveEdit = await inspector.SendCommandAsync("Debugger.setScriptSource", new JsonObject
+            {
+                ["scriptId"] = location["scriptId"]!.GetValue<string>(),
+                ["scriptSource"] = editedSource,
+                ["allowTopFrameEditing"] = true
+            });
+            Assert.Equal("Ok", liveEdit["status"]?.GetValue<string>());
 
             await inspector.SendCommandAsync("Debugger.resume");
             var consoleEvent = await consoleCalled.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -957,8 +960,8 @@ public sealed class V8InspectorClientIntegrationTests
                 await Task.Delay(25);
             }
             // Live-editing the active top frame restarts that activation. The explicit
-            // setVariableValue assertion above proves the local edit while paused; the
-            // resumed frame then runs the edited source with its original arguments.
+            // setVariableValue assertion above proves the local edit before the restart;
+            // the resumed frame then runs the edited source with its original arguments.
             Assert.Equal(15, runtimeEvaluation["result"]?["value"]?.GetValue<int>());
 
             var isolatedFailure = await subscriberFailure.Task.WaitAsync(TimeSpan.FromSeconds(5));
