@@ -756,6 +756,8 @@ public sealed class V8InspectorClientIntegrationTests
             CreateNoWindow = true
         });
         Assert.NotNull(process);
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
 
         try
         {
@@ -943,6 +945,12 @@ public sealed class V8InspectorClientIntegrationTests
                 ["allowTopFrameEditing"] = true
             });
             Assert.Equal("Ok", liveEdit["status"]?.GetValue<string>());
+            // Restarting the edited top frame briefly resumes execution. Wait for
+            // its new pause before resuming; an immediate resume races that restart.
+            var restartedPause = await pauses.Reader.ReadAsync(TestContext.Current.CancellationToken)
+                .AsTask().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            var restartedFrame = Assert.IsType<JsonObject>(Assert.IsType<JsonArray>(restartedPause["callFrames"])[0]);
+            Assert.Equal("compute", restartedFrame["functionName"]?.GetValue<string>());
 
             await inspector.SendCommandAsync("Debugger.resume");
             var consoleEvent = await consoleCalled.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -981,8 +989,12 @@ public sealed class V8InspectorClientIntegrationTests
         }
         finally
         {
-            if (!process!.HasExited) process.Kill(entireProcessTree: true);
+            var exitedBeforeCleanup = process.HasExited;
+            if (!exitedBeforeCleanup) process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync();
+            TestContext.Current.TestOutputHelper?.WriteLine($"Node exited before cleanup: {exitedBeforeCleanup}; exit code: {process.ExitCode}");
+            TestContext.Current.TestOutputHelper?.WriteLine(await standardOutput);
+            TestContext.Current.TestOutputHelper?.WriteLine(await standardError);
         }
     }
 
