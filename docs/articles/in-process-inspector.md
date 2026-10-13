@@ -53,7 +53,7 @@ If you prefer to edit your project file (`.csproj`) directly, add the package to
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Chrome.DevTools.DiagnosticTools" Version="0.1.0-preview.13" />
+  <PackageReference Include="Chrome.DevTools.DiagnosticTools" Version="0.1.0" />
 </ItemGroup>
 ```
 
