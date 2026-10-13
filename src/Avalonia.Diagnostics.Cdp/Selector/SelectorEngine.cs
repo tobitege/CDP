@@ -503,11 +503,11 @@ public static class SelectorEngine
         if (result != null) return result;
 
         // Fallback: search other registered windows/TopLevels only if query root is a TopLevel window
-        if (root is TopLevel)
+        if (root is TopLevel rootWindow)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win != root)
+                if (CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     result = QuerySelectorInternal(win, normalizedSelector, useLogicalTree);
                     if (result != null) return result;
@@ -531,17 +531,18 @@ public static class SelectorEngine
         // Fallback: try alternate tree type
         var altResults = new List<Visual>();
         QuerySelectorAllInternal(root, normalizedSelector, altResults, !useLogicalTree);
+        var known = new HashSet<Visual>(results);
         foreach (var r in altResults)
         {
-            if (!results.Contains(r)) results.Add(r);
+            if (known.Add(r)) results.Add(r);
         }
 
         // Fallback: search other registered windows/TopLevels if no matches found in root and root is a TopLevel window
-        if (results.Count == 0 && root is TopLevel)
+        if (results.Count == 0 && root is TopLevel rootWindow)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win != root)
+                if (CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     QuerySelectorAllInternal(win, normalizedSelector, results, useLogicalTree);
                     QuerySelectorAllInternal(win, normalizedSelector, results, !useLogicalTree);

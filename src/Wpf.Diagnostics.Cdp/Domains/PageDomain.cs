@@ -218,7 +218,7 @@ public static class PageDomain
                 var width = Math.Max(1, (int)(window.ActualWidth * scale));
                 var height = Math.Max(1, (int)(window.ActualHeight * scale));
 
-                var rtb = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra30);
+                var rtb = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
                 rtb.Render(window);
 
                 var encoder = new PngBitmapEncoder();

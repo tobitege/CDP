@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Chrome.DevTools.Protocol;
 
@@ -13,6 +14,7 @@ public class RecordedStep
     public double? PointY { get; set; }
     public string Point { get; set; } = "";
     public string AssignTo { get; set; } = "";
+    public List<RecordedStep> NestedSteps { get; set; } = new();
     public double Width { get; set; }
     public double Height { get; set; }
     public string Url { get; set; } = "";

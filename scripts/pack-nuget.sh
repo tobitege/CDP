@@ -75,7 +75,17 @@ echo "Packing ${#packable_projects[@]} projects into ${output_dir}"
 
 for csproj in "${packable_projects[@]}"; do
   echo "Packing ${csproj}"
-  pack_args=(dotnet pack "$csproj" -c "$configuration" -o "$output_dir")
+  # GeneratePackageOnBuild makes the Pack target default to NoBuild. Build the
+  # requested targets and version here, including Windows targets omitted by an
+  # earlier platform-default build, without recursively packing dependencies.
+  pack_args=(dotnet pack "$csproj" -c "$configuration" -o "$output_dir" /p:GeneratePackageOnBuild=false)
+  # Include the native Windows target even when release packages are built on Linux.
+  # Otherwise these packages contain only their non-Windows placeholder assembly.
+  case "$csproj" in
+    src/Wpf.Diagnostics.Cdp/Wpf.Diagnostics.Cdp.csproj|src/WinUI.Diagnostics.Cdp/WinUI.Diagnostics.Cdp.csproj)
+      pack_args+=("/p:EnableWindowsTargeting=true")
+      ;;
+  esac
   if [[ -n "$version" ]]; then
     pack_args+=("/p:Version=${version}")
   fi

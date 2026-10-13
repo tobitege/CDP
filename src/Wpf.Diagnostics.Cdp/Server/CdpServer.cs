@@ -112,7 +112,7 @@ public static class CdpServer
         {
             var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
             if (dispatcher.CheckAccess()) return await action();
-            return await dispatcher.InvokeAsync(action).Task;
+            return await dispatcher.InvokeAsync(action).Task.Unwrap();
         };
 
         Chrome.DevTools.Protocol.CdpServer.TargetProvider = GetWpfTargets;
@@ -348,6 +348,11 @@ public static class CdpServer
     public static IEnumerable<(string Id, Window Window, string Title)> GetWindows()
     {
         return _targets.Select(x => (x.Value.Id, x.Key, x.Value.Title));
+    }
+
+    internal static bool IsRegistered(Window? window)
+    {
+        return window != null && _targets.ContainsKey(window);
     }
 
     public static JsonArray GetActiveTargets()

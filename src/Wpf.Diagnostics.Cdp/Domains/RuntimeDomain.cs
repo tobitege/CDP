@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
@@ -174,7 +175,7 @@ public class WpfScriptGlobals
 
 public static class RuntimeDomain
 {
-    private static readonly ConcurrentDictionary<string, Engine> _engines = new();
+    private static readonly ConditionalWeakTable<CdpSession, Engine> _engines = new();
 
     public static async Task<JsonObject> HandleAsync(CdpSession session, string action, JsonObject @params)
     {
@@ -363,7 +364,7 @@ public static class RuntimeDomain
         {
             try
             {
-                var engine = _engines.GetOrAdd(session.Id, s =>
+                var engine = _engines.GetValue(session, s =>
                 {
                     var eng = new Engine();
                     eng.SetValue("window", new CdpRuntimeWindow(session));
@@ -541,5 +542,24 @@ public static class RuntimeDomain
         string jsonStr = node.ToJsonString();
         var jsonParser = engine.Evaluate("JSON.parse");
         return engine.Invoke(jsonParser, jsonStr);
+    }
+}
+
+public static class ScriptPreprocessor
+{
+    public static string Preprocess(string expression)
+    {
+        if (string.IsNullOrWhiteSpace(expression)) return expression;
+
+        var processed = System.Text.RegularExpressions.Regex.Replace(expression, @"(?<!\w)\$0\b", "_0");
+        processed = System.Text.RegularExpressions.Regex.Replace(processed, @"(?<!\w)\$vm\b", "DataContext");
+        processed = System.Text.RegularExpressions.Regex.Replace(processed, @"(?<!\w)\$dc\b", "DataContext");
+
+        if (expression.Length < 1000)
+        {
+            processed = System.Text.RegularExpressions.Regex.Replace(processed, @"\(\s*[A-Z][A-Za-z0-9_.*+?<>]*\s*\)", "");
+        }
+
+        return processed;
     }
 }

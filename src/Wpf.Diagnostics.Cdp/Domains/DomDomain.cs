@@ -99,7 +99,6 @@ public static class DomDomain
                 {
                     int? nodeId = @params["nodeId"]?.GetValue<int>();
                     int? backendNodeId = @params["backendNodeId"]?.GetValue<int>();
-                    string objectGroup = @params["objectGroup"]?.GetValue<string>() ?? "console";
 
                     Visual? targetVisual = null;
                     if (nodeId.HasValue)
@@ -116,9 +115,19 @@ public static class DomDomain
                         throw new Exception("Node not found");
                     }
 
-                    var elementObj = new CdpRuntimeElement(targetVisual);
-                    var runtimeObj = session.RegisterObject(elementObj, objectGroup);
-                    return new JsonObject { ["object"] = runtimeObj };
+                    var objectId = session.RegisterObject(targetVisual);
+                    return new JsonObject
+                    {
+                        ["object"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["subtype"] = "node",
+                            ["className"] = targetVisual.GetType().FullName,
+                            ["description"] = targetVisual.GetType().Name,
+                            ["objectId"] = objectId,
+                            ["backendNodeId"] = nodeId ?? backendNodeId
+                        }
+                    };
                 }
 
             case "querySelector":

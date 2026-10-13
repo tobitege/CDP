@@ -38,7 +38,7 @@ public class PlaywrightGenerator : ICodeGenerator
         sb.AppendLine($"    const browser = await chromium.connectOverCDP('{EscapeJsString(host)}');");
         sb.AppendLine("    const context = browser.contexts()[0];");
         sb.AppendLine("    const page = context.pages()[0];");
-        if (stepsList.Any(step => !string.IsNullOrEmpty(step.AssignTo) || step.Point.Contains("${") || step.Value.Contains("${")))
+        if (FlattenSteps(stepsList).Any(step => !string.IsNullOrEmpty(step.AssignTo) || step.Point.Contains("${") || step.Value.Contains("${") || step.Selector.Contains("${")))
         {
             sb.AppendLine("    const variables = Object.create(null);");
             sb.AppendLine("    const interpolate = value => value.replace(/\\$\\{([^}]+)\\}/g, (_, key) => {");
@@ -56,11 +56,58 @@ public class PlaywrightGenerator : ICodeGenerator
             sb.AppendLine("    });");
         }
 
+        AppendSteps(sb, stepsList);
+        sb.AppendLine();
+        sb.AppendLine("    await browser.close();");
+        sb.AppendLine("  });");
+        sb.AppendLine("});");
+
+        return sb.ToString();
+    }
+
+    private static IEnumerable<RecordedStep> FlattenSteps(IEnumerable<RecordedStep> steps)
+    {
+        foreach (var step in steps)
+        {
+            yield return step;
+            foreach (var child in FlattenSteps(step.NestedSteps)) yield return child;
+        }
+    }
+
+    private static void AppendSteps(StringBuilder sb, IReadOnlyList<RecordedStep> stepsList)
+    {
         for (int i = 0; i < stepsList.Count; i++)
         {
             var step = stepsList[i];
             sb.AppendLine();
-            if (step.Type == "click")
+            if (step.Type == "retry")
+            {
+                sb.AppendLine("    await test.step('Retry block', async () => {");
+                sb.AppendLine($"      const maxRetries = Number({ScriptValue(step.Value)});");
+                sb.AppendLine("      if (!Number.isInteger(maxRetries) || maxRetries < 0) throw new Error('Invalid retry count');");
+                sb.AppendLine("      for (let attempt = 0; ; attempt++) {");
+                sb.AppendLine("        try {");
+                AppendSteps(sb, step.NestedSteps);
+                sb.AppendLine("          break;");
+                sb.AppendLine("        } catch (error) {");
+                sb.AppendLine("          if (attempt >= maxRetries) throw error;");
+                sb.AppendLine("        }");
+                sb.AppendLine("      }");
+                sb.AppendLine("    });");
+            }
+            else if (step.Type == "waitForVisible" || step.Type == "waitForHidden")
+            {
+                var state = step.Type == "waitForVisible" ? "visible" : "hidden";
+                sb.AppendLine($"    await test.step('Wait for element to be {state}', async () => {{");
+                // Poll the runtime facade as well as browser DOM nodes. Native CDP targets do not
+                // run Playwright's injected DOM mutation polling script.
+                var visibility = "(function () { var e = document.querySelector('" + EscapeJsString(step.Selector) + "'); " +
+                    "if (!e) return false; if (typeof e.isVisible === 'boolean') return e.isVisible; " +
+                    "var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; })()";
+                sb.AppendLine($"      await expect.poll(() => page.evaluate({ScriptValue(visibility)}), {{ timeout: Number({ScriptValue(step.Value)}) }}).toBe({(state == "visible" ? "true" : "false")});");
+                sb.AppendLine("    });");
+            }
+            else if (step.Type == "click")
             {
                 var options = new List<string>();
                 if (step.Button != "left") options.Add($"button: '{step.Button}'");
@@ -259,12 +306,6 @@ public class PlaywrightGenerator : ICodeGenerator
             }
         }
 
-        sb.AppendLine();
-        sb.AppendLine("    await browser.close();");
-        sb.AppendLine("  });");
-        sb.AppendLine("});");
-
-        return sb.ToString();
     }
 
     private static string ScriptValue(string value)
