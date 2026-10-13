@@ -35,7 +35,7 @@ class Program
                 .UseReactiveUI(_ => { })
                 .WithInterFont()
                 .LogToTrace()
-                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseDotNetSystemFont = true });
+                .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseDotNetSystemFont = true, UseHeadlessDrawing = false }).UseSkia();
 
             builder.SetupWithoutStarting();
 
@@ -71,7 +71,7 @@ class Program
 
         if (Array.Exists(Environment.GetCommandLineArgs(), arg => arg.Equals("--headless", StringComparison.OrdinalIgnoreCase)))
         {
-            builder.UseHeadless(new AvaloniaHeadlessPlatformOptions { UseDotNetSystemFont = true });
+            builder.UseHeadless(new AvaloniaHeadlessPlatformOptions { UseDotNetSystemFont = true, UseHeadlessDrawing = false }).UseSkia();
         }
         else
         {

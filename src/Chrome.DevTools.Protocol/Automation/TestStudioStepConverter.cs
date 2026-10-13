@@ -158,6 +158,19 @@ public static class TestStudioStepConverter
                 recStep.PointX = pointX;
                 recStep.PointY = pointY;
             }
+            else if (pointObj is string pointText)
+            {
+                recStep.Point = Interpolate(pointText, env);
+            }
+            else if (step.Parameters.TryGetValue("x", out var xObj) && step.Parameters.TryGetValue("y", out var yObj))
+            {
+                recStep.Point = Interpolate($"{FlowCommandCatalog.ScalarToString(xObj)}, {FlowCommandCatalog.ScalarToString(yObj)}", env);
+            }
+
+            if (step.Parameters.TryGetValue("assignTo", out var assignTo) || step.Parameters.TryGetValue("outputVariable", out assignTo))
+            {
+                recStep.AssignTo = assignTo?.ToString() ?? "";
+            }
 
             // Width, Height
             if (step.Parameters.TryGetValue("width", out var wObj)) recStep.Width = SafeToDouble(wObj);
@@ -361,6 +374,17 @@ public static class TestStudioStepConverter
                     {
                         foreach (var kv in step.Parameters)
                         {
+                            if (kv.Key == "env" && kv.Value is System.Collections.IDictionary environment)
+                            {
+                                foreach (System.Collections.DictionaryEntry entry in environment)
+                                {
+                                    if (entry.Key is string name)
+                                    {
+                                        mergedEnv[name] = Interpolate(entry.Value?.ToString() ?? "", currentEnv);
+                                    }
+                                }
+                                continue;
+                            }
                             if (kv.Value != null)
                             {
                                 mergedEnv[kv.Key] = Interpolate(kv.Value.ToString() ?? "", currentEnv);

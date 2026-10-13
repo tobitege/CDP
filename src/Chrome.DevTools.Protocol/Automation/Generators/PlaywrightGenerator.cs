@@ -38,6 +38,14 @@ public class PlaywrightGenerator : ICodeGenerator
         sb.AppendLine($"    const browser = await chromium.connectOverCDP('{EscapeJsString(host)}');");
         sb.AppendLine("    const context = browser.contexts()[0];");
         sb.AppendLine("    const page = context.pages()[0];");
+        if (stepsList.Any(step => !string.IsNullOrEmpty(step.AssignTo) || step.Point.Contains("${") || step.Value.Contains("${")))
+        {
+            sb.AppendLine("    const variables = Object.create(null);");
+            sb.AppendLine("    const interpolate = value => value.replace(/\\$\\{([^}]+)\\}/g, (_, key) => {");
+            sb.AppendLine("      if (!Object.hasOwn(variables, key)) throw new Error('Unresolved flow variable: ' + key);");
+            sb.AppendLine("      return String(variables[key]);");
+            sb.AppendLine("    });");
+        }
         sb.AppendLine();
 
         bool hasViewportStep = stepsList.Any(s => s.Type == "setViewport");
@@ -75,6 +83,12 @@ public class PlaywrightGenerator : ICodeGenerator
                 if (step.PointX.HasValue && step.PointY.HasValue)
                 {
                     sb.AppendLine($"      await page.mouse.click({FormatNumber(step.PointX.Value)}, {FormatNumber(step.PointY.Value)});");
+                }
+                else if (!string.IsNullOrEmpty(step.Point))
+                {
+                    sb.AppendLine($"      const point = {ScriptValue(step.Point)}.split(',').map(Number);");
+                    sb.AppendLine("      if (point.length !== 2 || !point.every(Number.isFinite)) throw new Error('Invalid tap coordinates');");
+                    sb.AppendLine("      await page.mouse.click(point[0], point[1]);");
                 }
                 else
                 {
@@ -221,21 +235,22 @@ public class PlaywrightGenerator : ICodeGenerator
             else if (step.Type == "assertTrue")
             {
                 sb.AppendLine($"    await test.step('Assert True: {EscapeJsString(step.Value)}', async () => {{");
-                sb.AppendLine($"      const result = await page.evaluate('{EscapeJsString(step.Value)}');");
+                sb.AppendLine($"      const result = await page.evaluate({ScriptValue(step.Value)});");
                 sb.AppendLine($"      await expect(result).toBeTruthy();");
                 sb.AppendLine("    });");
             }
             else if (step.Type == "assertFalse")
             {
                 sb.AppendLine($"    await test.step('Assert False: {EscapeJsString(step.Value)}', async () => {{");
-                sb.AppendLine($"      const result = await page.evaluate('{EscapeJsString(step.Value)}');");
+                sb.AppendLine($"      const result = await page.evaluate({ScriptValue(step.Value)});");
                 sb.AppendLine($"      await expect(result).toBeFalsy();");
                 sb.AppendLine("    });");
             }
             else if (step.Type == "evalScript" || step.Type == "runScript")
             {
                 sb.AppendLine($"    await test.step('Evaluate Script: {EscapeJsString(step.Value)}', async () => {{");
-                sb.AppendLine($"      await page.evaluate('{EscapeJsString(step.Value)}');");
+                var assignment = string.IsNullOrEmpty(step.AssignTo) ? "" : $"variables['{EscapeJsString(step.AssignTo)}'] = ";
+                sb.AppendLine($"      {assignment}await page.evaluate({ScriptValue(step.Value)});");
                 sb.AppendLine("    });");
             }
             else
@@ -250,6 +265,12 @@ public class PlaywrightGenerator : ICodeGenerator
         sb.AppendLine("});");
 
         return sb.ToString();
+    }
+
+    private static string ScriptValue(string value)
+    {
+        var quoted = $"'{EscapeJsString(value)}'";
+        return value.Contains("${") ? $"interpolate({quoted})" : quoted;
     }
 
     private static List<string> GetModifiersList(int modifiers)

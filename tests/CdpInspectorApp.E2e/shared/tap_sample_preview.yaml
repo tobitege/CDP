@@ -1,0 +1,19 @@
+appId: "CdpInspectorApp"
+description: "Resolve a sample control and click its mapped position through the inspector preview"
+---
+- assertTrue: "document.querySelector('#imgScreenshot').__raw_node.Source != null"
+- evalScript: |
+    globalThis.previewHistoryIndex = __raw_window.DataContext.Console.ConsoleHistory.Count;
+    __raw_window.DataContext.Console.ConsoleInputText = "(function () { var r = document.querySelector('${PREVIEW_SELECTOR}').getBoundingClientRect(); return JSON.stringify({ x: r.x + r.width / 2, y: r.y + r.height / 2, width: __raw_window.Bounds.Width, height: __raw_window.Bounds.Height }); })()";
+    __raw_window.DataContext.Console.EvaluateAsync();
+- delay: "1000"
+- assertTrue: "__raw_window.DataContext.Console.ConsoleHistory.Count > previewHistoryIndex"
+- evalScript:
+    value: "(function () { var p = JSON.parse(__raw_window.DataContext.Console.ConsoleHistory[previewHistoryIndex].Result); var r = document.querySelector('#imgScreenshot').getBoundingClientRect(); return r.x + p.x * r.width / p.width * __raw_window.DataContext.Simulation.ZoomLevel; })()"
+    assignTo: "previewTapX"
+- evalScript:
+    value: "(function () { var p = JSON.parse(__raw_window.DataContext.Console.ConsoleHistory[previewHistoryIndex].Result); var r = document.querySelector('#imgScreenshot').getBoundingClientRect(); return r.y + p.y * r.height / p.height * __raw_window.DataContext.Simulation.ZoomLevel; })()"
+    assignTo: "previewTapY"
+- tapOn:
+    x: "${previewTapX}"
+    y: "${previewTapY}"
