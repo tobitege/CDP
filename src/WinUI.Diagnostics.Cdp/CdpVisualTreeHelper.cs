@@ -249,9 +249,15 @@ public static class CdpVisualTreeHelper
     private static IntPtr GetWindowHandle(Window window)
     {
         if (window == null) return IntPtr.Zero;
+#if WINDOWS
+        // WindowNative is supplied by the WinRT interop assembly, not necessarily
+        // the assembly containing XAML Window. Keep the native WinUI path typed.
+        return WinRT.Interop.WindowNative.GetWindowHandle(window);
+#else
         try
         {
-            var type = typeof(Window).Assembly.GetType("WinRT.Interop.WindowNative");
+            var type = Type.GetType("WinRT.Interop.WindowNative, WinRT.Runtime") ??
+                typeof(Window).Assembly.GetType("WinRT.Interop.WindowNative");
             if (type != null)
             {
                 var method = type.GetMethod("GetWindowHandle", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -270,6 +276,7 @@ public static class CdpVisualTreeHelper
             // ignore
         }
         return IntPtr.Zero;
+#endif
     }
 
     public record HitTestResult(UIElement? Target, Window? TargetWindow, Point LocalPoint);

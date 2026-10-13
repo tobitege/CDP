@@ -197,11 +197,12 @@ public static class SelectorEngine
         var result = QuerySelectorInternal(root, normalizedSelector, useLogicalTree);
         if (result != null) return result;
 
-        if (CdpServer.GetWindows().Any(w => w.Window.Content == root))
+        var rootWindow = CdpServer.GetWindows().FirstOrDefault(w => w.Window.Content == root).Window;
+        if (rootWindow != null)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win.Content != root && win.Content != null)
+                if (win.Content != null && CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     result = QuerySelectorInternal(win.Content, normalizedSelector, useLogicalTree);
                     if (result != null) return result;
@@ -219,11 +220,12 @@ public static class SelectorEngine
         var normalizedSelector = NormalizeSelector(selector);
         QuerySelectorAllInternal(root, normalizedSelector, results, useLogicalTree);
 
-        if (results.Count == 0 && CdpServer.GetWindows().Any(w => w.Window.Content == root))
+        var rootWindow = CdpServer.GetWindows().FirstOrDefault(w => w.Window.Content == root).Window;
+        if (results.Count == 0 && rootWindow != null)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win.Content != root && win.Content != null)
+                if (win.Content != null && CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     QuerySelectorAllInternal(win.Content, normalizedSelector, results, useLogicalTree);
                 }

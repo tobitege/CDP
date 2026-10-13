@@ -226,11 +226,11 @@ public static class SelectorEngine
         var result = QuerySelectorInternal(root, normalizedSelector, useLogicalTree);
         if (result != null) return result;
 
-        if (root is Window)
+        if (root is Window rootWindow)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win != root)
+                if (CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     result = QuerySelectorInternal(win, normalizedSelector, useLogicalTree);
                     if (result != null) return result;
@@ -248,11 +248,11 @@ public static class SelectorEngine
         var normalizedSelector = NormalizeSelector(selector);
         QuerySelectorAllInternal(root, normalizedSelector, results, useLogicalTree);
 
-        if (results.Count == 0 && root is Window)
+        if (results.Count == 0 && root is Window rootWindow)
         {
             foreach (var win in CdpServer.GetWindows().Select(x => x.Window))
             {
-                if (win != root)
+                if (CdpVisualTreeHelper.IsOverlayWindowFor(rootWindow, win))
                 {
                     QuerySelectorAllInternal(win, normalizedSelector, results, useLogicalTree);
                 }

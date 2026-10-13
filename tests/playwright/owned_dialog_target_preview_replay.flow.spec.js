@@ -252,6 +252,35 @@ test.describe('CDP Recorded Tests', () => {
       }
     });
 
+    await test.step('Evaluate Script: __raw_window.DataContext.Console.ConsoleHistory.Count', async () => {
+      variables['dialogScopeIndex'] = await page.evaluate('__raw_window.DataContext.Console.ConsoleHistory.Count');
+    });
+
+    await test.step('Evaluate Script: __raw_window.DataContext.Console.ConsoleInputText = "document.querySelector(\'#btnOpenOwnedDialog\') == null && document.querySelectorAll(\'#btnOpenOwnedDialog\').length == 0 && document.querySelector(\'#btnOwnedDialogIncrement\') != null ? \'scoped\' : \'leaked\'"; __raw_window.DataContext.Console.EvaluateAsync();', async () => {
+      await page.evaluate('__raw_window.DataContext.Console.ConsoleInputText = "document.querySelector(\'#btnOpenOwnedDialog\') == null && document.querySelectorAll(\'#btnOpenOwnedDialog\').length == 0 && document.querySelector(\'#btnOwnedDialogIncrement\') != null ? \'scoped\' : \'leaked\'"; __raw_window.DataContext.Console.EvaluateAsync();');
+    });
+
+    await test.step('Retry block', async () => {
+      const maxRetries = Number('40');
+      if (!Number.isInteger(maxRetries) || maxRetries < 0) throw new Error('Invalid retry count');
+      for (let attempt = 0; ; attempt++) {
+        try {
+
+    await test.step('Delay 250ms', async () => {
+      await page.waitForTimeout(250);
+    });
+
+    await test.step('Assert True: __raw_window.DataContext.Console.ConsoleHistory.Count > ${dialogScopeIndex} && __raw_window.DataContext.Console.ConsoleHistory[${dialogScopeIndex}].Result == \'scoped\'', async () => {
+      const result = await page.evaluate(interpolate('__raw_window.DataContext.Console.ConsoleHistory.Count > ${dialogScopeIndex} && __raw_window.DataContext.Console.ConsoleHistory[${dialogScopeIndex}].Result == \'scoped\''));
+      await expect(result).toBeTruthy();
+    });
+          break;
+        } catch (error) {
+          if (attempt >= maxRetries) throw error;
+        }
+      }
+    });
+
     await test.step('Evaluate Script: __raw_window.DataContext.NavigateToView("Recorder")', async () => {
       await page.evaluate('__raw_window.DataContext.NavigateToView("Recorder")');
     });
@@ -336,8 +365,8 @@ test.describe('CDP Recorded Tests', () => {
     });
 
     await test.step('Tap on element #btnTestStudioClear', async () => {
-      const element_39 = page.locator('#btnTestStudioClear');
-      await element_39.click();
+      const element_42 = page.locator('#btnTestStudioClear');
+      await element_42.click();
     });
 
     await test.step('Evaluate Script: __raw_window.DataContext.Recorder.ClearRecording()', async () => {
@@ -465,8 +494,8 @@ test.describe('CDP Recorded Tests', () => {
     });
 
     await test.step('Tap on element #btnTestStudioPlay', async () => {
-      const element_53 = page.locator('#btnTestStudioPlay');
-      await element_53.click();
+      const element_56 = page.locator('#btnTestStudioPlay');
+      await element_56.click();
     });
 
     await test.step('Retry block', async () => {

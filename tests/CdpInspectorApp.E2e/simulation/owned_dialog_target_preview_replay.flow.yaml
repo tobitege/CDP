@@ -15,6 +15,17 @@ tags:
 - runFlow: "shared/connect_to_sample.yaml"
 - runFlow: "shared/connect_to_sample_owned_dialog.yaml"
 
+# Selectors on the dialog target must not fall back to the owner window.
+- evalScript:
+    value: "__raw_window.DataContext.Console.ConsoleHistory.Count"
+    assignTo: "dialogScopeIndex"
+- evalScript: "__raw_window.DataContext.Console.ConsoleInputText = \"document.querySelector('#btnOpenOwnedDialog') == null && document.querySelectorAll('#btnOpenOwnedDialog').length == 0 && document.querySelector('#btnOwnedDialogIncrement') != null ? 'scoped' : 'leaked'\"; __raw_window.DataContext.Console.EvaluateAsync();"
+- retry:
+    maxRetries: 40
+    commands:
+      - delay: "250"
+      - assertTrue: "__raw_window.DataContext.Console.ConsoleHistory.Count > ${dialogScopeIndex} && __raw_window.DataContext.Console.ConsoleHistory[${dialogScopeIndex}].Result == 'scoped'"
+
 # 1. Show the Test Studio with the preview at 100% zoom and no pan.
 #    The Recorder tab can be scrolled out of the tab strip, so it is activated through the view model.
 - evalScript: "__raw_window.DataContext.NavigateToView(\"Recorder\")"

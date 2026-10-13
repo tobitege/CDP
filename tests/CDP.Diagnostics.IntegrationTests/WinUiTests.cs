@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -25,12 +26,18 @@ public partial class WinUiTests
             try
             {
                 WinRT.ComWrappersSupport.InitializeComWrappers();
-                Application.Start(_ => new TestApplication(() =>
+                Application.Start(parameters =>
                 {
-                    try { VerifyWindows(); }
-                    catch (Exception ex) { failure = ex; }
-                    finally { Application.Current.Exit(); }
-                }));
+                    SynchronizationContext.SetSynchronizationContext(
+                        new Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(
+                            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()));
+                    _ = new TestApplication(async () =>
+                    {
+                        try { await VerifyWindows(); }
+                        catch (Exception ex) { failure = ex; }
+                        finally { Application.Current.Exit(); }
+                    });
+                });
             }
             catch (Exception ex) { failure = ex; }
         }) { IsBackground = true };
@@ -40,15 +47,25 @@ public partial class WinUiTests
         if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
-    private sealed class TestApplication(Action verify) : Application
+    private sealed class TestApplication(Func<Task> verify) : Application
     {
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(() => verify());
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().TryEnqueue(async () => await verify());
         }
     }
 
-    private static void VerifyWindows()
+    private static async Task ActivateAsync(Window window)
+    {
+        var content = Assert.IsAssignableFrom<FrameworkElement>(window.Content);
+        var loaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        content.Loaded += (_, _) => loaded.TrySetResult();
+        window.Activate();
+        if (content.IsLoaded) return;
+        await loaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    private static async Task VerifyWindows()
     {
         CdpServer.EnsureInitialized();
         var mainGrid = new Grid { Name = "MainGrid" };
@@ -61,7 +78,7 @@ public partial class WinUiTests
         var popup = new Popup { Child = popupBtn };
         try
         {
-            mainWindow.Activate();
+            await ActivateAsync(mainWindow);
             dialogWindow.Activate();
             nestedWindow.Activate();
             SetWindowLongPtr(WinRT.Interop.WindowNative.GetWindowHandle(dialogWindow), -8,
@@ -72,7 +89,7 @@ public partial class WinUiTests
             CdpServer.Register(dialogWindow, "DialogWindow");
             CdpServer.Register(nestedWindow, "NestedWindow");
             mainGrid.Children.Add(popup);
-            popup.XamlRoot = mainGrid.XamlRoot;
+            popup.XamlRoot = Assert.IsType<XamlRoot>(mainGrid.XamlRoot);
             popup.IsOpen = true;
             mainGrid.UpdateLayout();
 
@@ -85,6 +102,7 @@ public partial class WinUiTests
             Assert.Equal(mainGrid, CdpVisualTreeHelper.GetParent(popupBtn, false));
             Assert.Equal(popupBtn, SelectorEngine.QuerySelector(mainGrid, "#PopupBtn"));
             Assert.Null(SelectorEngine.QuerySelector(dialogGrid, "#MainGrid"));
+            Assert.Empty(SelectorEngine.QuerySelectorAll(dialogGrid, "#MainGrid"));
             Assert.True(CdpVisualTreeHelper.IsOverlayWindowFor(dialogWindow, nestedWindow));
             Assert.False(CdpVisualTreeHelper.IsOverlayWindowFor(dialogWindow, mainWindow));
         }

@@ -253,10 +253,10 @@ public class CdpVisualTreeHelperTests
     [AvaloniaFact]
     public void GetParent_ReturnsOwnerWindow_ForOwnedSecondaryWindow()
     {
-        var mainWindow = new Window { Title = "Parent Main Window", Width = 400, Height = 300 };
+        var mainWindow = new Window { Name = "ownerWindow", Title = "Parent Main Window", Width = 400, Height = 300 };
         var dialog = new Window { Title = "Parent Owned Dialog", Width = 200, Height = 150 };
-        var nestedDialog = new Window { Title = "Parent Nested Dialog", Width = 100, Height = 80 };
-        var freeWindow = new Window { Title = "Parent Free Window", Width = 100, Height = 80 };
+        var nestedDialog = new Window { Name = "nestedWindow", Title = "Parent Nested Dialog", Width = 100, Height = 80 };
+        var freeWindow = new Window { Name = "freeWindow", Title = "Parent Free Window", Width = 100, Height = 80 };
         mainWindow.Show();
         CdpServer.Register(mainWindow, "Parent Main Window");
         dialog.Show(mainWindow);
@@ -286,6 +286,13 @@ public class CdpVisualTreeHelperTests
             Assert.DoesNotContain(nestedDialog, CdpVisualTreeHelper.GetChildren(primary!, true));
             Assert.Contains(nestedDialog, CdpVisualTreeHelper.GetChildren(dialog, true));
             Assert.DoesNotContain(mainWindow, CdpVisualTreeHelper.GetChildren(dialog, true));
+            foreach (bool logical in new[] { false, true })
+            {
+                Assert.Null(SelectorEngine.QuerySelector(dialog, "#ownerWindow", logical));
+                Assert.Empty(SelectorEngine.QuerySelectorAll(dialog, "#ownerWindow", logical));
+                Assert.Null(SelectorEngine.QuerySelector(dialog, "#freeWindow", logical));
+                Assert.Same(nestedDialog, SelectorEngine.QuerySelector(dialog, "#nestedWindow", logical));
+            }
         }
         finally
         {

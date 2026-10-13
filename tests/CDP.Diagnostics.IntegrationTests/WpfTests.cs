@@ -9,33 +9,9 @@ using Xunit;
 
 namespace CDP.Diagnostics.IntegrationTests;
 
-public class WpfTests
+public class WpfTests(WpfApplicationFixture application) : IClassFixture<WpfApplicationFixture>
 {
-    private Exception? _threadException;
-
-    private void RunInSta(Action action)
-    {
-        _threadException = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                _threadException = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (_threadException != null)
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(_threadException).Throw();
-        }
-    }
+    private void RunInSta(Action action) => application.Run(action);
 
     [Fact]
     public void TestWpfPopupAndSecondaryWindowSupport()
@@ -50,18 +26,18 @@ public class WpfTests
             var mainWindow = new Window
             {
                 Title = "MainWindow",
-                Content = mainGrid,
-                Visibility = Visibility.Visible
+                Content = mainGrid
             };
 
             var secondaryGrid = new Grid { Name = "SecondaryGrid" };
             var secondaryWindow = new Window
             {
                 Title = "SecondaryWindow",
-                Content = secondaryGrid,
-                Visibility = Visibility.Visible
+                Content = secondaryGrid
             };
 
+            mainWindow.Show();
+            secondaryWindow.Show();
             CdpServer.Register(mainWindow, "MainWindow");
             CdpServer.Register(secondaryWindow, "SecondaryWindow");
 
@@ -111,12 +87,14 @@ public class WpfTests
         {
             CdpServer.EnsureInitialized();
             var main = new Window { Name = "MainWindow", Content = new Grid(), Width = 300, Height = 200 };
-            var dialog = new Window { Name = "DialogWindow", Owner = main, Content = new Grid(), Width = 200, Height = 150 };
-            var nested = new Window { Name = "NestedWindow", Owner = dialog, Content = new Button { Name = "NestedButton" }, Width = 100, Height = 100 };
+            var dialog = new Window { Name = "DialogWindow", Content = new Grid(), Width = 200, Height = 150 };
+            var nested = new Window { Name = "NestedWindow", Content = new Button { Name = "NestedButton" }, Width = 100, Height = 100 };
             try
             {
                 main.Show();
+                dialog.Owner = main;
                 dialog.Show();
+                nested.Owner = dialog;
                 nested.Show();
                 CdpServer.Register(main, "MainWindow");
                 CdpServer.Register(dialog, "DialogWindow");
@@ -126,6 +104,7 @@ public class WpfTests
                 Assert.Contains(nested, CdpVisualTreeHelper.GetChildren(dialog, false));
                 Assert.Equal(dialog, CdpVisualTreeHelper.GetParent(nested, false));
                 Assert.Null(SelectorEngine.QuerySelector(dialog, "#MainWindow"));
+                Assert.Empty(SelectorEngine.QuerySelectorAll(dialog, "#MainWindow"));
                 Assert.NotNull(SelectorEngine.QuerySelector(dialog, "#NestedButton"));
                 Assert.True(CdpVisualTreeHelper.IsOverlayWindowFor(dialog, nested));
                 Assert.False(CdpVisualTreeHelper.IsOverlayWindowFor(dialog, main));
@@ -157,20 +136,18 @@ public class WpfTests
                 Title = "MainWindow",
                 Content = mainGrid,
                 Width = 300,
-                Height = 200,
-                Visibility = Visibility.Visible
+                Height = 200
             };
 
             var mainBtn = new Button { Name = "MainBtn", Content = "Main Button", Width = 100, Height = 50 };
             mainGrid.Children.Add(mainBtn);
-
+            mainWindow.Show();
             CdpServer.Register(mainWindow, "MainWindow");
 
             try
             {
-                // Force layout/arrange
-                mainWindow.Measure(new System.Windows.Size(300, 200));
-                mainWindow.Arrange(new Rect(0, 0, 300, 200));
+                mainWindow.UpdateLayout();
+                var buttonCenter = mainBtn.TranslatePoint(new Point(50, 25), mainWindow);
 
                 using var fakeWs = new FakeWebSocket();
                 var session = new CdpSession(fakeWs, mainWindow);
@@ -178,8 +155,8 @@ public class WpfTests
                 // Call DOM.getNodeForLocation
                 var hitParams = new System.Text.Json.Nodes.JsonObject
                 {
-                    ["x"] = 50,
-                    ["y"] = 25
+                    ["x"] = (int)buttonCenter.X,
+                    ["y"] = (int)buttonCenter.Y
                 };
 
                 var hitRes = Wpf.Diagnostics.Cdp.Domains.DomDomain.HandleAsync(session, "getNodeForLocation", hitParams).GetAwaiter().GetResult();
@@ -349,5 +326,45 @@ public class FakeWebSocket : System.Net.WebSockets.WebSocket
 
     public override void Dispose()
     {
+    }
+}
+
+public sealed class WpfApplicationFixture : IDisposable
+{
+    private readonly Thread _thread;
+    private readonly Application _application;
+
+    public WpfApplicationFixture()
+    {
+        Application? application = null;
+        Exception? failure = null;
+        using var ready = new ManualResetEventSlim();
+        _thread = new Thread(() =>
+        {
+            try
+            {
+                application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                ready.Set();
+                application.Run();
+            }
+            catch (Exception ex) { failure = ex; ready.Set(); }
+        }) { IsBackground = true };
+        _thread.SetApartmentState(ApartmentState.STA);
+        _thread.Start();
+        Assert.True(ready.Wait(TimeSpan.FromSeconds(30)), "WPF dispatcher did not start.");
+        if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+        _application = application!;
+    }
+
+    public void Run(Action action) => _application.Dispatcher.Invoke(() =>
+    {
+        _application.MainWindow = null;
+        action();
+    });
+
+    public void Dispose()
+    {
+        _application.Dispatcher.Invoke(_application.Shutdown);
+        Assert.True(_thread.Join(TimeSpan.FromSeconds(30)), "WPF dispatcher did not stop.");
     }
 }
