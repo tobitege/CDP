@@ -15,7 +15,7 @@ The **`Chrome.DevTools.Automation.Headless`** package provides reusable window e
 To use these helpers in your test project, add the NuGet package:
 
 ```bash
-dotnet add package Chrome.DevTools.Automation.Headless --prerelease
+dotnet add package Chrome.DevTools.Automation.Headless
 ```
 
 Make sure your test project also references the core Avalonia test packages:

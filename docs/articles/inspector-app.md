@@ -55,8 +55,8 @@ The Inspector App is highly portable and supports four primary deployment method
 The recommended method for local development is installing the inspector globally from NuGet:
 
 ```bash
-# Install the inspector as a global CLI tool (include --prerelease for preview versions)
-dotnet tool install -g Chrome.DevTools.Inspector --prerelease
+# Install the latest stable inspector as a global CLI tool
+dotnet tool install -g Chrome.DevTools.Inspector
 ```
 
 Once installed, launch it directly from any command prompt or terminal:

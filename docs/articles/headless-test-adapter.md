@@ -21,7 +21,7 @@ The adapter runs `.flow.yaml` files by:
 ### Install the Package
 
 ```bash
-dotnet add package Chrome.DevTools.Avalonia --prerelease
+dotnet add package Chrome.DevTools.Avalonia
 ```
 
 ### Configure the Test Host

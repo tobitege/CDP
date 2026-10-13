@@ -16,7 +16,7 @@ By adding a lightweight, embedded CDP listener, you can query your WPF applicati
 Install the `Chrome.DevTools.Wpf` package into your WPF executable project:
 
 ```bash
-dotnet add package Chrome.DevTools.Wpf --prerelease
+dotnet add package Chrome.DevTools.Wpf
 ```
 
 > [!NOTE]

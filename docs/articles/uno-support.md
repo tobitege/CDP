@@ -16,7 +16,7 @@ Because Uno Platform mirrors the WinUI API structure under the `Microsoft.UI.Xam
 Install the `Chrome.DevTools.Uno` package into your Uno Platform application project (typically targeting your Skia desktop head or cross-platform targets):
 
 ```bash
-dotnet add package Chrome.DevTools.Uno --prerelease
+dotnet add package Chrome.DevTools.Uno
 ```
 
 ---

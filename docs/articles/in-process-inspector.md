@@ -33,10 +33,10 @@ To use the in-process inspector, you must install the `Chrome.DevTools.Diagnosti
 
 ### Using .NET CLI
 
-Since the package is in active development, make sure to append the `--prerelease` option to pull the latest preview build:
+Install the latest stable version (v0.1.0 or later):
 
 ```bash
-dotnet add package Chrome.DevTools.DiagnosticTools --prerelease
+dotnet add package Chrome.DevTools.DiagnosticTools
 ```
 
 ### Using Package Manager Console
@@ -44,7 +44,7 @@ dotnet add package Chrome.DevTools.DiagnosticTools --prerelease
 Run the following command in the Package Manager Console within your IDE:
 
 ```powershell
-Install-Package Chrome.DevTools.DiagnosticTools -IncludePrerelease
+Install-Package Chrome.DevTools.DiagnosticTools
 ```
 
 ### Using MSBuild PackageReference

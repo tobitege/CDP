@@ -31,7 +31,7 @@ We provide the shippable NuGet package **`Chrome.DevTools.Automation.Appium`** w
 ### 1. Installation
 Add the package to your test project:
 ```bash
-dotnet add package Chrome.DevTools.Automation.Appium --prerelease
+dotnet add package Chrome.DevTools.Automation.Appium
 ```
 
 This package automatically bundles the Node.js `appium-cdp-driver.js` server script and configures MSBuild to copy it directly to your build output directory, making it instantly runnable.

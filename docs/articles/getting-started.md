@@ -54,16 +54,16 @@ Add the core CDP server package to your Avalonia application project:
 
 ### Using .NET CLI (Recommended)
 
-Since packages are currently published as preview versions, include the `--prerelease` flag to retrieve the latest version:
+Install the latest stable version (v0.1.0 or later):
 
 ```bash
-dotnet add package Chrome.DevTools.Avalonia --prerelease
+dotnet add package Chrome.DevTools.Avalonia
 ```
 
 ### Using the Package Manager Console
 
 ```powershell
-Install-Package Chrome.DevTools.Avalonia -IncludePrerelease
+Install-Package Chrome.DevTools.Avalonia
 ```
 
 ### Manual XML Reference
@@ -79,7 +79,7 @@ If you prefer editing your `.csproj` file directly, add the package reference wi
 > [!TIP]
 > Replace `x.y.z` with the latest version from [NuGet.org](https://www.nuget.org/packages/Chrome.DevTools.Avalonia/). You can find it by running:
 > ```bash
-> dotnet package search Chrome.DevTools.Avalonia --prerelease
+> dotnet package search Chrome.DevTools.Avalonia
 > ```
 
 ---
@@ -196,7 +196,7 @@ The CDP Inspector is a full-featured, Chrome DevTools-inspired desktop applicati
 ### Install as a .NET Global Tool
 
 ```bash
-dotnet tool install -g Chrome.DevTools.Inspector --prerelease
+dotnet tool install -g Chrome.DevTools.Inspector
 ```
 
 ### Launch the Inspector
@@ -227,7 +227,7 @@ Once connected, you can:
 To update to the latest version:
 
 ```bash
-dotnet tool update -g Chrome.DevTools.Inspector --prerelease
+dotnet tool update -g Chrome.DevTools.Inspector
 ```
 
 ### Alternative: Download Pre-Built Binaries
@@ -250,7 +250,7 @@ If you prefer an integrated debugging experience without launching a separate in
 ### Install the Package
 
 ```bash
-dotnet add package Chrome.DevTools.DiagnosticTools --prerelease
+dotnet add package Chrome.DevTools.DiagnosticTools
 ```
 
 ### Attach the Inspector

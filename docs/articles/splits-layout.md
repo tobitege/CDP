@@ -19,7 +19,7 @@ The `SuperSplit` control enables:
 ## Installation
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Splits --prerelease
+dotnet add package Chrome.DevTools.Editor.Splits
 ```
 
 ## Usage

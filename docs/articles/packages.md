@@ -68,7 +68,7 @@ The foundational library of the entire project. It implements the JSON-RPC messa
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Protocol` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Protocol --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Protocol` |
 | **When to Use** | Use when building custom CDP client tools, client routing proxies, or when using the low-level WebSocket connection APIs directly. |
 | **Project References** | `CDP.Automation.OS.csproj` |
 | **NuGet Dependencies** | `YamlDotNet`, `SkiaSharp`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -103,7 +103,7 @@ The core server-side integration package for Avalonia UI applications. It embeds
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Avalonia` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Avalonia --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Avalonia` |
 | **When to Use** | Add this to your main Avalonia application executable project to enable remote inspection, E2E testing, or script automation. |
 | **Project References** | `Chrome.DevTools.Protocol.csproj` |
 | **NuGet Dependencies** | `Avalonia`, `Avalonia.Markup.Xaml.Loader`, `SkiaSharp`, `Microsoft.CodeAnalysis.CSharp.Scripting`, `Microsoft.CodeAnalysis.Workspaces.Common`, `Microsoft.CodeAnalysis.CSharp.Workspaces`, `Microsoft.CodeAnalysis.Features`, `Microsoft.CodeAnalysis.CSharp.Features`, `Microsoft.Data.Sqlite`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -147,7 +147,7 @@ The embedded CDP diagnostics server package for Windows Presentation Foundation 
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Wpf` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Wpf --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Wpf` |
 | **When to Use** | Add this to your main WPF application executable project to enable E2E testing or remote client inspections on Windows targets. |
 | **Project References** | `Chrome.DevTools.Protocol.csproj` |
 | **NuGet Dependencies** | `Jint`, `SkiaSharp`, `Microsoft.CodeAnalysis.CSharp.Scripting`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -183,7 +183,7 @@ The embedded CDP diagnostics server package for WinUI 3 desktop applications. It
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.WinUI` |
-| **Install Command** | `dotnet add package Chrome.DevTools.WinUI --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.WinUI` |
 | **When to Use** | Add this to your WinUI 3 desktop application project to enable remote DevTools protocol inspections and Playwright automation. |
 | **Project References** | `Chrome.DevTools.Protocol.csproj` |
 | **NuGet Dependencies** | `Microsoft.WindowsAppSDK`, `Jint`, `SkiaSharp`, `Microsoft.CodeAnalysis.CSharp.Scripting`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -216,7 +216,7 @@ The embedded CDP diagnostics server package for Uno Platform applications. It en
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Uno` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Uno --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Uno` |
 | **When to Use** | Add this to your Uno Platform application project to automate UI tests and perform inspect operations on non-Windows target platforms. |
 | **Project References** | `Chrome.DevTools.Protocol.csproj` |
 | **NuGet Dependencies** | `Uno.WinUI`, `Jint`, `SkiaSharp`, `Microsoft.CodeAnalysis.CSharp.Scripting`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -244,7 +244,7 @@ A cross-platform native operating system automation and accessibility driver. It
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Automation.OS` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Automation.OS --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Automation.OS` |
 | **When to Use** | Use when implementing system-level test runners, or automating external applications that cannot be modified with an embedded CDP server. |
 | **Project References** | None |
 | **NuGet Dependencies** | `SkiaSharp`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -279,7 +279,7 @@ An Appium client-driver and test setup orchestrator. It manages the execution li
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Automation.Appium` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Appium --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Appium` |
 | **When to Use** | Use when creating C# Appium E2E testing suites to automatically handle target processes and driver instances. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Appium.WebDriver`, `Selenium.WebDriver`, `xunit.v3.extensibility.core` |
@@ -308,7 +308,7 @@ A Selenium client-driver and test setup orchestrator. It manages the execution l
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Automation.Selenium` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Selenium --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Selenium` |
 | **When to Use** | Use when creating C# Selenium E2E testing suites to automatically handle target processes and driver instances. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Selenium.WebDriver`, `xunit.v3.extensibility.core` |
@@ -337,7 +337,7 @@ Headless driver and test helper support for Chrome DevTools Protocol (CDP) and A
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Automation.Headless` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Headless --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Automation.Headless` |
 | **When to Use** | Use when writing in-process headless Avalonia tests (using `Avalonia.Headless` or `Avalonia.Headless.XUnit`) to reuse click, type, and drag-and-drop actions. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Avalonia`, `Avalonia.Headless` |
@@ -362,7 +362,7 @@ The shared UI core of the custom Chrome DevTools inspector client application. I
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Inspector.Shared` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Inspector.Shared --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Inspector.Shared` |
 | **When to Use** | Add this when creating custom desktop inspection utilities, embedding Test Studio inside other client applications, or automating headless test scenarios. |
 | **Project References** | `Avalonia.Diagnostics.Cdp.csproj`, `CDP.Editor.Minimap.csproj`, `CDP.Editor.Nodes.csproj`, `CDP.Editor.Nodes.Msagl.csproj`, `CDP.Editor.Splits.csproj` |
 | **NuGet Dependencies** | `Avalonia`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`, `Jint`, `YamlDotNet`, `Avalonia.AvaloniaEdit`, `AvaloniaEdit.TextMate`, `TextMateSharp.Grammars`, `ProDataGrid`, `Microsoft.Extensions.Logging.Abstractions` |
@@ -400,7 +400,7 @@ A diagnostics package for in-process inspection. It serves as a direct, drop-in 
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.DiagnosticTools` |
-| **Install Command** | `dotnet add package Chrome.DevTools.DiagnosticTools --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.DiagnosticTools` |
 | **When to Use** | Add this to your application if you want to provide built-in, local developer diagnostics with an advanced visual tree selector, console scripting, and Test Studio. |
 | **Project References** | `Avalonia.Diagnostics.Cdp.csproj`, `CDP.Inspector.Shared.csproj` |
 | **NuGet Dependencies** | `Avalonia` |
@@ -435,7 +435,7 @@ A standalone text editor control built on top of `AvaloniaEdit` that features a 
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Editor.Minimap` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Minimap --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Minimap` |
 | **When to Use** | Use in any Avalonia application that needs a text editor with a high-performance minimap sidebar preview. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Avalonia`, `Avalonia.AvaloniaEdit` |
@@ -465,7 +465,7 @@ A standalone graphical node editor canvas control for Avalonia UI. It features a
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Editor.Nodes` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Nodes --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Nodes` |
 | **When to Use** | Use when building interactive node graphs, graphical state editors, or layout modeling canvases. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Avalonia` |
@@ -496,7 +496,7 @@ A layout integration extension for the Node Editor canvas. It integrates Microso
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Editor.Nodes.Msagl` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Nodes.Msagl --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Nodes.Msagl` |
 | **When to Use** | Use when nodes inside your node editor are generated programmatically and require automatic layout routing. |
 | **Project References** | `CDP.Editor.Nodes.csproj` |
 | **NuGet Dependencies** | `AutomaticGraphLayout`, `AutomaticGraphLayout.Drawing` |
@@ -521,7 +521,7 @@ A standalone layout control providing user-resizable split panes. It supports ne
 | Property | Description |
 | :--- | :--- |
 | **Package ID** | `Chrome.DevTools.Editor.Splits` |
-| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Splits --prerelease` |
+| **Install Command** | `dotnet add package Chrome.DevTools.Editor.Splits` |
 | **When to Use** | Use when building multi-panel developer tools or resizable layout interfaces in Avalonia UI. |
 | **Project References** | None |
 | **NuGet Dependencies** | `Avalonia` |

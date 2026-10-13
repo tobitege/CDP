@@ -269,7 +269,7 @@ public interface IOsAutomation
 Install the NuGet package in your project:
 
 ```bash
-dotnet add package Chrome.DevTools.Automation.OS --prerelease
+dotnet add package Chrome.DevTools.Automation.OS
 ```
 
 Or add a package reference manually:

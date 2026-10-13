@@ -16,7 +16,7 @@ With this package embedded, you can inspect your WinUI visual tree, map touch/mo
 Install the `Chrome.DevTools.WinUI` package into your WinUI 3 application project:
 
 ```bash
-dotnet add package Chrome.DevTools.WinUI --prerelease
+dotnet add package Chrome.DevTools.WinUI
 ```
 
 ---

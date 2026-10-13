@@ -20,13 +20,13 @@ The Node Editor provides:
 ### Core Node Editor
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Nodes --prerelease
+dotnet add package Chrome.DevTools.Editor.Nodes
 ```
 
 ### With MSAGL Automatic Layout
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Nodes.Msagl --prerelease
+dotnet add package Chrome.DevTools.Editor.Nodes.Msagl
 ```
 
 ## Usage

@@ -31,7 +31,7 @@ We provide the shippable NuGet package **`Chrome.DevTools.Automation.Selenium`**
 ### 1. Installation
 Add the package to your test project:
 ```bash
-dotnet add package Chrome.DevTools.Automation.Selenium --prerelease
+dotnet add package Chrome.DevTools.Automation.Selenium
 ```
 
 ### 2. Write the Test Suite

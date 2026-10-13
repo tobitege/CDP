@@ -17,7 +17,7 @@ The `MinimapTextEditor` control combines:
 ## Installation
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Minimap --prerelease
+dotnet add package Chrome.DevTools.Editor.Minimap
 ```
 
 ## Usage

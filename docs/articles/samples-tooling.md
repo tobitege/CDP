@@ -59,7 +59,7 @@ dotnet run --project samples/CdpInspectorApp/CdpInspectorApp.csproj
 The CDP Inspector is available as a .NET global tool for quick installation:
 
 ```bash
-dotnet tool install -g Chrome.DevTools.Inspector --prerelease
+dotnet tool install -g Chrome.DevTools.Inspector
 ```
 
 **Launch:**

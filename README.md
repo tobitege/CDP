@@ -175,9 +175,9 @@ To capture window screenshots and stream real-time screencast frames to the Simu
 Install the NuGet package `Chrome.DevTools.Avalonia` to your main Avalonia application:
 
 #### Using .NET CLI (Recommended)
-Since packages are currently published as preview versions, include the `--prerelease` flag to retrieve the latest version:
+Install the latest stable version (v0.1.0 or later):
 ```bash
-dotnet add package Chrome.DevTools.Avalonia --prerelease
+dotnet add package Chrome.DevTools.Avalonia
 ```
 
 #### Manual XML Reference
@@ -193,7 +193,7 @@ If manually adding the package reference to your `.csproj` file, specify the ver
 If you want to use accessibility-driven operating system automation (AXUIElement on macOS, UIAutomation on Windows, and X11 on Linux) to emulate CDP endpoints in-process, install `Chrome.DevTools.Automation.OS` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Automation.OS --prerelease
+dotnet add package Chrome.DevTools.Automation.OS
 ```
 
 You can then query window status, list open windows, or perform low-level inputs directly:
@@ -212,7 +212,7 @@ foreach (var win in windows)
 If you want to use the standalone custom controls (such as the Accordion, FlameChart, CpuPieChart, DiffViewer, etc.) in your own Avalonia applications without any Chrome DevTools Protocol or network server dependencies, install `Chrome.DevTools.Inspector.Controls` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Inspector.Controls --prerelease
+dotnet add package Chrome.DevTools.Inspector.Controls
 ```
 
 Include the controls' generic styling resources inside your `App.axaml` or `Styles.axaml` styles list:
@@ -273,7 +273,7 @@ A container control managing dockable window panels, float overlays, and split s
 If you want to use the Fluent Navigation View control (such as the NavigationView, NavigationViewItem, etc.) in your own Avalonia applications, install `Chrome.DevTools.FluentNavigation`:
 
 ```bash
-dotnet add package Chrome.DevTools.FluentNavigation --prerelease
+dotnet add package Chrome.DevTools.FluentNavigation
 ```
 
 Include the navigation styles inside your `App.axaml` or `Styles.axaml` styles list:
@@ -303,7 +303,7 @@ Use the `NavigationView` in your XAML views:
 If you only need the standalone `MinimapTextEditor` control, the code annotation inline layers, or visual gutter margins for your `AvaloniaEdit` editors without any Chrome DevTools Protocol or network server dependencies, install `Chrome.DevTools.Editor.Minimap` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Minimap --prerelease
+dotnet add package Chrome.DevTools.Editor.Minimap
 ```
 
 Include the editor's generic styling resources inside your `App.axaml` or `Styles.axaml` styles list:
@@ -328,7 +328,7 @@ Use `MinimapTextEditor` in your XAML views:
 If you need a generic, standalone graph node editor control for Avalonia (with support for nodes, drag-and-drop linking, bezier connection paths, zoom-to-pointer, and custom node payload content presenters) without any Chrome DevTools Protocol or network server dependencies, install `Chrome.DevTools.Editor.Nodes` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Nodes --prerelease
+dotnet add package Chrome.DevTools.Editor.Nodes
 ```
 
 Use `NodeEditorView` in your XAML views:
@@ -355,7 +355,7 @@ vm.ConnectNodes(node1, node2);
 If you want automatic graph layout capabilities (such as Sugiyama hierarchical, spring, or MDS layouts) powered by Microsoft Automatic Graph Layout (MSAGL) in the node editor, install `Chrome.DevTools.Editor.Nodes.Msagl` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Nodes.Msagl --prerelease
+dotnet add package Chrome.DevTools.Editor.Nodes.Msagl
 ```
 
 Register the `MsaglLayoutProvider` in the layout providers list of your `NodeEditorViewModel` instance:
@@ -370,7 +370,7 @@ NodeEditor.LayoutProviders.Add(new MsaglLayoutProvider());
 If you want a dynamic, user-resizable split pane layout container for your views, install `Chrome.DevTools.Editor.Splits` instead:
 
 ```bash
-dotnet add package Chrome.DevTools.Editor.Splits --prerelease
+dotnet add package Chrome.DevTools.Editor.Splits
 ```
 
 In your XAML, declare a `SuperSplit` layout element:
