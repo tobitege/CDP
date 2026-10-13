@@ -570,6 +570,64 @@ appId: "CdpInspectorApp"
     }
 
     [Fact]
+    public void PlaywrightGeneratorPreservesRuntimeCoordinatesAndScriptResults()
+    {
+        const string yaml = """
+appId: "CdpInspectorApp"
+---
+- evalScript:
+    value: "document.querySelector('#imgScreenshot').getBoundingClientRect().x"
+    assignTo: "previewX"
+- evalScript:
+    value: "120"
+    outputVariable: "previewY"
+- tapOn:
+    x: "${previewX}"
+    y: "${previewY}"
+- assertTrue: "${previewX} >= 0"
+""";
+
+        var steps = TestStudioStepConverter.ConvertYamlToRecordedSteps(yaml);
+        Assert.Equal("previewX", steps[0].AssignTo);
+        Assert.Equal("previewY", steps[1].AssignTo);
+        Assert.Equal("${previewX}, ${previewY}", steps[2].Point);
+
+        var generated = new PlaywrightGenerator().Generate(steps, "http://127.0.0.1:9223");
+        Assert.Contains("variables['previewX'] = await page.evaluate(", generated);
+        Assert.Contains("variables['previewY'] = await page.evaluate('120')", generated);
+        Assert.Contains("interpolate('${previewX}, ${previewY}').split(',').map(Number)", generated);
+        Assert.Contains("await page.mouse.click(point[0], point[1])", generated);
+        Assert.Contains("await page.evaluate(interpolate('${previewX} >= 0'))", generated);
+        Assert.DoesNotContain("page.locator('')", generated);
+    }
+
+    [Fact]
+    public void PlaywrightExportExpandsSubFlowEnvironment()
+    {
+        var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "cdp-flow-" + System.Guid.NewGuid());
+        System.IO.Directory.CreateDirectory(directory);
+        try
+        {
+            var main = System.IO.Path.Combine(directory, "main.flow.yaml");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "tap.yaml"), "appId: CdpInspectorApp\n---\n- tapOn: \"${PREVIEW_SELECTOR}\"\n");
+            const string yaml = """
+appId: CdpInspectorApp
+---
+- runFlow:
+    file: tap.yaml
+    env:
+      PREVIEW_SELECTOR: "#imgScreenshot"
+""";
+            var step = Assert.Single(TestStudioStepConverter.ConvertYamlToRecordedSteps(yaml, main, null));
+            Assert.Equal("#imgScreenshot", step.Selector);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TestCdpInspectorAppE2eFlows()
     {
         var e2eDir = System.IO.Path.Combine(System.AppContext.BaseDirectory, "../../../../../tests/CdpInspectorApp.E2e");

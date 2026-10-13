@@ -122,6 +122,43 @@ public class TestStudioFlowParamsTests
         Assert.Equal("Greetings ${USER_NAME}!", originalStep.Parameters["text"]);
     }
 
+    [Theory]
+    [InlineData("pl-PL", false)]
+    [InlineData("pl-PL", true)]
+    [InlineData("de-DE", false)]
+    [InlineData("de-DE", true)]
+    public async Task FractionalTapCoordinatesUseInvariantCulture(string culture, bool usePointParameter)
+    {
+        var originalCulture = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+            var cdp = new MockCdpService();
+            var vm = new TestStudioViewModel(cdp)
+            {
+                IsGenerateReportEnabled = false,
+                IsRecordVideoEnabled = false
+            };
+            var step = new TestStudioStepModel { Action = "tapOn", Value = "227.125, 726.5" };
+            if (usePointParameter)
+            {
+                step.Parameters["point"] = step.Value;
+                step.Value = "";
+            }
+            vm.Steps.Add(step);
+            await vm.PlayAsync();
+            Assert.True(step.IsPassed);
+            var press = Assert.Single(cdp.SentCommands.Where(command =>
+                command.Method == "Input.dispatchMouseEvent" && command.Params?["type"]?.GetValue<string>() == "mousePressed"));
+            Assert.Equal(227.125, press.Params!["x"]!.GetValue<double>());
+            Assert.Equal(726.5, press.Params["y"]!.GetValue<double>());
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+
     [Fact]
     public void TestEvalScriptParsing()
     {

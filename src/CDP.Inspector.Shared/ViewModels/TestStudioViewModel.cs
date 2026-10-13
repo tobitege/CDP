@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
@@ -5262,14 +5263,14 @@ public class TestStudioViewModel : ViewModelBase, IStateProvider
             input = input.Trim();
             if (input.EndsWith("%", StringComparison.Ordinal))
             {
-                if (double.TryParse(input.TrimEnd('%'), out var percentage))
+                if (double.TryParse(input.TrimEnd('%'), NumberStyles.Float, CultureInfo.InvariantCulture, out var percentage))
                 {
                     result = total * percentage / 100.0;
                     return true;
                 }
             }
 
-            return double.TryParse(input, out result);
+            return double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
         }
 
         if (TryParseCoordinate(parts[0], width, out var x) &&
@@ -5359,7 +5360,8 @@ public class TestStudioViewModel : ViewModelBase, IStateProvider
         {
             var xPart = parts[0].Replace("x:", "").Replace("x=", "").Trim(' ', '"', '\'');
             var yPart = parts[1].Replace("y:", "").Replace("y=", "").Trim(' ', '"', '\'');
-            if (double.TryParse(xPart, out double x) && double.TryParse(yPart, out double y))
+            if (double.TryParse(xPart, NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
+                double.TryParse(yPart, NumberStyles.Float, CultureInfo.InvariantCulture, out double y))
             {
                 return (x, y);
             }
